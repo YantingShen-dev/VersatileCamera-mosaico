@@ -1,0 +1,28 @@
+**/build*/
+**/managed_components/
+**/sdkconfig
+**/sdkconfig.old
+**/.codex-runs/
+**/dependencies.lock
+**/__pycache__/
+**/*.py[cod]
+/.tools/
+/artifacts/
+**/assets/generated/
+/.mosaico-state/
+
+# Local agent experiments; shared skills and tools remain versioned.
+/.agents/analysis/
+
+# This repository includes the face application's resolved dependency versions.
+!projects/face_mosaico/dependencies.lock
+workspace.local.json
+**/.gateway/
+**/.venv*/
+**/.ruff_cache/
+**/.pytest_cache/
+**/.env
+**/.env.*
+**/*.log
+**/*.tmp
+/evidence/

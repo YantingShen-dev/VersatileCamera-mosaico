@@ -1,0 +1,59 @@
+cmake_minimum_required(VERSION 3.16)
+set(MOSAICO_UTILS_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../submodule/esp-mosaico-utils")
+set(MOSAICO_BSP_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../submodule/esp-mosaico-bsp")
+if(NOT SDKCONFIG)
+    set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+endif()
+if(NOT SDKCONFIG_DEFAULTS)
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.application.defaults")
+endif()
+include("${MOSAICO_UTILS_ROOT}/mosaico-tools/cmake/gsp_compiler.cmake")
+list(APPEND EXTRA_COMPONENT_DIRS
+    "${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/components/esp_mosaico_app_recovery"
+    "${MOSAICO_UTILS_ROOT}/mosaico-tools/components/esp_mosaico_gsp_bundle"
+    "${MOSAICO_UTILS_ROOT}/mosaico-tools/components/esp_mosaico_gsp_iris")
+include("${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/cmake/mosaico_idf_project.cmake")
+project(face_mosaico VERSION 1.0.0)
+# ESP-DL's upstream anonymous C linkage typedef is accepted by this GCC version.
+idf_component_get_property(face_dl_lib espressif__esp-dl COMPONENT_LIB)
+target_compile_options(${face_dl_lib} PRIVATE -Wno-error=non-c-typedef-for-linkage)
+# The registry delivers CRLF sensor sources on Windows; apply the BSP's exact
+# reviewed timing patch with whitespace tolerance, retaining idempotence.
+set(face_sensor_patch "${MOSAICO_BSP_ROOT}/components/mosaico_module_camera/patches/esp-cam-sensor-sc101iot-pclk-delay.patch")
+execute_process(COMMAND git apply --reverse --check --ignore-space-change "${face_sensor_patch}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" RESULT_VARIABLE face_patch_applied OUTPUT_QUIET ERROR_QUIET)
+if(NOT face_patch_applied EQUAL 0)
+    execute_process(COMMAND git apply --ignore-space-change "${face_sensor_patch}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" RESULT_VARIABLE face_patch_result)
+    if(NOT face_patch_result EQUAL 0)
+        message(FATAL_ERROR "Cannot apply BSP camera timing patch")
+    endif()
+endif()
+# Windows Binutils cannot open non-ASCII archive arguments. Downloaded components
+# live behind a directory junction; give imported archives their physical paths.
+function(_mosaico_normalize_imported_archives directory)
+    get_property(_mosaico_imported DIRECTORY "${directory}" PROPERTY IMPORTED_TARGETS)
+    foreach(_mosaico_target IN LISTS _mosaico_imported)
+        if(TARGET "${_mosaico_target}")
+            get_target_property(_mosaico_archive "${_mosaico_target}" IMPORTED_LOCATION)
+            get_filename_component(_mosaico_extension "${_mosaico_archive}" EXT)
+            if(_mosaico_extension STREQUAL ".a" AND EXISTS "${_mosaico_archive}")
+                string(REPLACE "${PROJECT_SOURCE_DIR}/managed_components/"
+                    "${_mosaico_managed_physical}/" _mosaico_physical_archive "${_mosaico_archive}")
+                if(NOT _mosaico_archive STREQUAL _mosaico_physical_archive)
+                    set_property(TARGET "${_mosaico_target}" PROPERTY IMPORTED_LOCATION "${_mosaico_physical_archive}")
+                    message(STATUS "Windows archive path normalized: ${_mosaico_target}")
+                endif()
+            endif()
+        endif()
+    endforeach()
+    get_property(_mosaico_subdirectories DIRECTORY "${directory}" PROPERTY SUBDIRECTORIES)
+    foreach(_mosaico_directory IN LISTS _mosaico_subdirectories)
+        _mosaico_normalize_imported_archives("${_mosaico_directory}")
+    endforeach()
+endfunction()
+if(CMAKE_HOST_WIN32 AND DEFINED ENV{MOSAICO_MANAGED_COMPONENTS_PATH})
+    file(TO_CMAKE_PATH "$ENV{MOSAICO_MANAGED_COMPONENTS_PATH}" _mosaico_managed_physical)
+    _mosaico_normalize_imported_archives("${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+include("${MOSAICO_UTILS_ROOT}/mosaico-tools/cmake/system_update.cmake")

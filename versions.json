@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "url": "https://github.com/esp-mosaico/esp-mosaico-vibe.git",
+    "commit": "1872fd88c01d7807556d01fd2a19864e40a307c9"
+  },
+  "esp_idf": {
+    "url": "https://github.com/espressif/esp-idf.git",
+    "commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe"
+  },
+  "submodules": {
+    "submodule/esp-mosaico-bsp": "5f88b91e1be055d1d3674364123b2779a1758377",
+    "submodule/esp-mosaico-utils": "be151ae047014e79a9c7ae0092dd203844499003",
+    "submodule/raylib-lite-engine": "99acdc58ee43380ef1c7f6eb215c06ee70af8dd8"
+  }
+}

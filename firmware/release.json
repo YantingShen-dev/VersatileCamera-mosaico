@@ -1,0 +1,36 @@
+{
+  "file": "face_mosaico-1.0.0.irisfw",
+  "version": "1.0.0",
+  "target": "esp32s31",
+  "bytes": 2501841,
+  "sha256": "d45008d95ecdcbdc9d99158a50c92f490748dcffbd12983b59a0ef64ad883a98",
+  "application_elf_sha256": "00ad3756071691c137d0a5e0406352415267f7b808e57f7eebc247e9ec5965b2",
+  "validated_on": "2026-10-29",
+  "vibe_mode_tested": "0.2.1",
+  "components": [
+    {
+      "file": "partition-table.bin",
+      "id": 1,
+      "kind": "partition_table",
+      "sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12",
+      "size": 4096,
+      "target_offset": 32768
+    },
+    {
+      "file": "ota_0.bin",
+      "id": 2,
+      "kind": "application",
+      "sha256": "323d61e1ff98ae03bc2ac33167655789bf8cacecf195a91ec5a3a32da4d24dff",
+      "size": 4974528,
+      "target_offset": 2162688
+    },
+    {
+      "file": "ui_apps.bin",
+      "id": 3,
+      "kind": "data",
+      "sha256": "cbeb0d4ab05cb56d57e63f181bb90f2abdef9701b2372438dee0918e7fd650a4",
+      "size": 303440,
+      "target_offset": 15728640
+    }
+  ]
+}
