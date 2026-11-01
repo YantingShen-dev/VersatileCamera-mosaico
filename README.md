@@ -29,6 +29,8 @@ python mosaico.py iris list --details --project projects/face_mosaico --json
 
 ## 换电脑：继续开发
 
+尚未连接硬件时，可先运行[电脑模拟器](docs/pc-simulator.md)，验证人脸 Idea 的界面与交互。
+
 Windows 推荐使用上面的短英文路径；SDK 使用独立的 `C:\mosaico-env`，避免中文路径和过长路径影响工具链。Python 3.12 是本项目实测版本。
 
 ```powershell

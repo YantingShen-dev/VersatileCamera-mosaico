@@ -8,6 +8,8 @@
 - [CLI 与设备操作](mosaico-cli_CN.md)
 - [Gateway 与设备归属](project-gateway_CN.md)
 - [游戏创建与仿真](game-development_CN.md)
+- [在 Windows 电脑上运行人脸 Idea](pc-simulator.md)
+- [冰箱库存模拟器：日常有鲜](fridge-simulator.md)
 - [工作区、依赖与 0.2 迁移](workspace-migration_CN.md)
 
 公共实现、API 和协议资料由所属仓库维护：

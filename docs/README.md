@@ -8,6 +8,8 @@
 - [CLI and device operations](mosaico-cli.md)
 - [Gateways and device ownership](project-gateway.md)
 - [Game creation and simulation](game-development.md)
+- [Run the face Idea on a Windows PC](pc-simulator.md)
+- [Fridge inventory simulator with Qwen](fridge-simulator.md)
 - [Workspace, dependency and 0.2 migration](workspace-migration.md)
 
 Public implementations, APIs and protocol documentation are maintained by their
