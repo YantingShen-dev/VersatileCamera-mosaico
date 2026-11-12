@@ -1,0 +1,59 @@
+{
+  "application": "photo_print_mosaico",
+  "version": "1.0.0",
+  "date": "2026-11-12",
+  "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
+  "firmware_elf_sha256": "45e11daf5d549460dd78fabfb0ec547d67f58aa30868ce34e7fc1cd511565af6",
+  "bundle": "photo_print_mosaico-1.0.0.irisfw",
+  "bundle_bytes": 1310700,
+  "bundle_sha256": "e7d94ce8bbbb77ecc6b8778937c9bd2e4304746428807b423e1aafac1e6ec2cf",
+  "manifest": {
+    "components": [
+      {
+        "file": "partition-table.bin",
+        "id": 1,
+        "kind": "partition_table",
+        "sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12",
+        "size": 4096,
+        "target_offset": 32768
+      },
+      {
+        "file": "ota_0.bin",
+        "id": 2,
+        "kind": "application",
+        "sha256": "2c859e5a593b44b396efeb01fded51f9cd6c74994e831174cd196bc477846301",
+        "size": 2100768,
+        "target_offset": 2162688
+      },
+      {
+        "file": "ui_apps.bin",
+        "id": 3,
+        "kind": "data",
+        "sha256": "5f2f49c74e6944f112a99fb6aea09a31dfc006500cc34b0ff377c54e4936df75",
+        "size": 141904,
+        "target_offset": 15728640
+      }
+    ],
+    "minimum_recovery_version": "0.2.0",
+    "release": "1.0.0",
+    "schema": "esp-iris-system-update/0.2",
+    "target": {
+      "chip_id": 32,
+      "flash_size": 16777216
+    },
+    "target_layout_sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12"
+  },
+  "validation": {
+    "bitmap_unit": "passed: black/white/gray/bit order/exact preview",
+    "native_simulator": "passed: capture/retake/offline/double tap/failure preserves photo",
+    "physical_print": "user confirmed no horizontal white bands and continuous feeding",
+    "normal_to_vibe": "passed after Bluetooth shutdown cleanup, reset_reason=3, crash_count=0",
+    "operation_id": "7e1ac0c3-1478-4300-8234-cc9b71736d10"
+  },
+  "idea": {
+    "local_id_display": "ddfc02",
+    "name": "photo_print_mosaico",
+    "version": "1.0.0",
+    "saved": true
+  }
+}

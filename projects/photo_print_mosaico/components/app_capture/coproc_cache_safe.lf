@@ -1,0 +1,8 @@
+# The pinned S31 SDK calls these helpers from rtos_int_enter after hardware-loop
+# instructions. Flash/NVS writes can disable the cache while this ISR runs.
+# Keep their code and constants internal without modifying the pinned SDK.
+[mapping:face_coproc_cache_safe]
+archive: libfreertos.a
+entries:
+    port:pxPortGetCoprocArea (noflash)
+    port:pxPortUpdateCoprocOwner (noflash)
