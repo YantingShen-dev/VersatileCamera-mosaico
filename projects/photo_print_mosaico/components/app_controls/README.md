@@ -1,7 +1,8 @@
 # app_controls
 
 Owns the right Interaction board and speaker output in separate tasks. Upper key maps
-from the module RIGHT pad, lower from LEFT. GPIO mode detects mechanical presses;
+from the module RIGHT pad, lower from LEFT. AUTO mode prefers touch input, which
+detects fingers and mechanical key-to-GND presses; GPIO is the BSP fallback.
 40 ms debounce emits one timestamped callback per press, with no hold-repeat.
 
 Start with a callback that queues events; never manipulate camera state from it.

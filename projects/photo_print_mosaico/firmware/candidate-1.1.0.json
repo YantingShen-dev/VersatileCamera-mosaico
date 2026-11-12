@@ -4,10 +4,10 @@
   "date": "2026-11-13",
   "status": "candidate: startup verified; physical acceptance pending",
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
-  "firmware_elf_sha256": "7177bf270ed578b35cbd8c0a68848a2c043a679ed366f1333df43c3154148288",
+  "firmware_elf_sha256": "485f7247770a2564aeae7937b7017b3f54c159a15a760aeb1aa9e3800090e65e",
   "bundle": "photo_print_mosaico-1.1.0.irisfw",
-  "bundle_bytes": 2339036,
-  "bundle_sha256": "c8cda74d116cfde62e190c0c3e03e100ce554f8287022b7206ed41a50c81a71a",
+  "bundle_bytes": 2339214,
+  "bundle_sha256": "2337b3120624527210617b4df9b2f3eb4f59be58973dea10116960211c5a2831",
   "manifest": {
     "components": [
       {
@@ -22,8 +22,8 @@
         "file": "ota_0.bin",
         "id": 2,
         "kind": "application",
-        "sha256": "14be5317008b00e9654ad37a75dca859ebb54284c30600fb8ab46339a678a3bb",
-        "size": 5833712,
+        "sha256": "263b1ebd7c515b7898238cea77d60cbe2d2d7659e247948ef4d95f2bd08eda0a",
+        "size": 5834032,
         "target_offset": 2162688
       },
       {
@@ -49,17 +49,20 @@
     "bitmap_unit": "passed: five filters and exact preview",
     "native_simulator": "passed: five filters, double click, countdown, rearm, retake, offline, duplicate print and failure",
     "startup": "passed: camera, interaction board, speaker, models and printer Bluetooth ready; crash_count=0",
-    "stability": "same boot after 159 seconds; free internal 85247 bytes; minimum 45956 bytes",
-    "operation_id": "15bbe954-6843-4818-abc4-e3784c709128",
-    "boot_id": "2351538134360507804",
-    "physical_buttons": "pending user feedback",
+    "stability": "prior build stable after 159 seconds; current touch build startup passed",
+    "operation_id": "7fa32986-5d71-4a73-993f-9f290c853bab",
+    "boot_id": "14048569261710844193",
+    "physical_buttons": "touch mode initialized; user confirmation pending",
     "gesture_and_sound": "pending user feedback",
-    "physical_print": "pending user feedback: width, centering and continuous feed",
-    "normal_to_vibe": "pending with final audio configuration"
+    "physical_print": "user confirmed 384-dot width, centering and continuous feeding on pre-touch build; printer code unchanged",
+    "normal_to_vibe": "passed on pre-touch build; touch shutdown pending"
   },
   "idea": {
     "saved": false,
     "previous_version": "1.0.0",
-    "previous_local_id_display": "ddfc02"
+    "previous_local_id_display": "ddfc02",
+    "pre_touch_build_local_id_display": "dc9fcf",
+    "pre_touch_build_version": "1.1.0",
+    "pre_touch_build_saved": true
   }
 }

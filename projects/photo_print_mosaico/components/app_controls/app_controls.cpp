@@ -25,7 +25,7 @@ struct app_controls {
             if (!board) {
                 mosaico_interact_config_t config = MOSAICO_INTERACT_DEFAULT_CONFIG();
                 config.slot = MOSAICO_MODULE_MGR_SLOT_RIGHT;
-                config.button_mode = MOSAICO_INTERACT_BUTTON_MODE_GPIO;
+                config.button_mode = MOSAICO_INTERACT_BUTTON_MODE_AUTO;
                 config.led_brightness = 0;
                 esp_err_t e = mosaico_interact_open(&config, &board);
                 if (e != ESP_OK) {
@@ -38,7 +38,10 @@ struct app_controls {
                 }
                 first = true;
                 board_ready.store(true);
-                ESP_LOGI("photo_buttons", "Right interaction board ready");
+                mosaico_interact_info_t info = {};
+                if (mosaico_interact_get_info(board, &info) == ESP_OK)
+                    ESP_LOGI("photo_buttons", "Right interaction board ready; input=%s",
+                             info.button_mode == MOSAICO_INTERACT_BUTTON_MODE_TOUCH ? "touch" : "GPIO");
             }
             mosaico_interact_inputs_t inputs = {};
             if (mosaico_interact_read_inputs(board, &inputs) != ESP_OK) {
@@ -103,6 +106,7 @@ struct app_controls {
                 continue;
             if (!audio_ready.load())
                 continue;
+            ESP_LOGI("photo_sound", "Playing %s", shutter ? "shutter" : "countdown beep");
             unsigned length = shutter ? 3600 : 2040;
             for (unsigned start = 0; start < length && !stop.load(); start += 240) {
                 for (unsigned i = 0; i < 240; i++) {
@@ -123,7 +127,9 @@ struct app_controls {
                     }
                     pcm[i] = (int16_t)sample;
                 }
-                if (esp_codec_dev_write(speaker, pcm, sizeof(pcm)) != ESP_CODEC_DEV_OK) {
+                int error = esp_codec_dev_write(speaker, pcm, sizeof(pcm));
+                if (error != ESP_CODEC_DEV_OK) {
+                    ESP_LOGE("photo_sound", "Speaker write failed: %d", error);
                     audio_ready.store(false);
                     break;
                 }
