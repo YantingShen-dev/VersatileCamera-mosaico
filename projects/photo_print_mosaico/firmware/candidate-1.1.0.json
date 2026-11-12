@@ -2,12 +2,12 @@
   "application": "photo_print_mosaico",
   "version": "1.1.0",
   "date": "2026-11-13",
-  "status": "candidate: startup verified; physical acceptance pending",
+  "status": "candidate: mechanical keys, shutter sound and print verified; real palm countdown pending",
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
-  "firmware_elf_sha256": "485f7247770a2564aeae7937b7017b3f54c159a15a760aeb1aa9e3800090e65e",
+  "firmware_elf_sha256": "07533acaf08aac738b6d1767f84481ab1786ff76af85712d0d7b5c62588767e0",
   "bundle": "photo_print_mosaico-1.1.0.irisfw",
-  "bundle_bytes": 2339214,
-  "bundle_sha256": "2337b3120624527210617b4df9b2f3eb4f59be58973dea10116960211c5a2831",
+  "bundle_bytes": 2366118,
+  "bundle_sha256": "14f03e69590c6cc8bfffde2985c87252a51a5eea0472e19a113682fa436c99be",
   "manifest": {
     "components": [
       {
@@ -22,8 +22,8 @@
         "file": "ota_0.bin",
         "id": 2,
         "kind": "application",
-        "sha256": "263b1ebd7c515b7898238cea77d60cbe2d2d7659e247948ef4d95f2bd08eda0a",
-        "size": 5834032,
+        "sha256": "2f3af8b89077c21661b4de4f472f08a5dacdbd400460ccd0301ba57fa6e8e106",
+        "size": 5877744,
         "target_offset": 2162688
       },
       {
@@ -49,20 +49,26 @@
     "bitmap_unit": "passed: five filters and exact preview",
     "native_simulator": "passed: five filters, double click, countdown, rearm, retake, offline, duplicate print and failure",
     "startup": "passed: camera, interaction board, speaker, models and printer Bluetooth ready; crash_count=0",
-    "stability": "prior build stable after 159 seconds; current touch build startup passed",
-    "operation_id": "7fa32986-5d71-4a73-993f-9f290c853bab",
-    "boot_id": "14048569261710844193",
-    "physical_buttons": "touch mode initialized; user confirmation pending",
-    "gesture_and_sound": "pending user feedback",
+    "stability": "final build healthy; earlier matching pipeline remained stable without crashes",
+    "operation_id": "1488d3a3-423c-4ba5-89a5-5a12e9c49989",
+    "boot_id": "1150928067246464571",
+    "physical_buttons": "GPIO mechanical keys restored; live logs confirm capture/filter/retake/print and user confirms shutter sound",
+    "gesture_and_sound": "shutter audible confirmed; five-beep palm countdown pending physical retest after detector gate 0.65 -> 0.35",
     "physical_print": "user confirmed 384-dot width, centering and continuous feeding on pre-touch build; printer code unchanged",
-    "normal_to_vibe": "passed on pre-touch build; touch shutdown pending"
+    "normal_to_vibe": "passed on final build: boot 1150928067246464571 -> 8342298717519520751",
+    "poweroff": "RPC acknowledged 01; camera/Bluetooth stopped in log; both USB interfaces absent and device offline",
+    "idea_resume": "passed: d1331f restored exact final ELF 07533aca; boot 13170038055676749686; crash_count=0",
+    "poweroff_operation_id": "09fc8d3c-71cd-4659-9526-c2e91b14ab78"
   },
   "idea": {
-    "saved": false,
+    "saved": true,
     "previous_version": "1.0.0",
     "previous_local_id_display": "ddfc02",
     "pre_touch_build_local_id_display": "dc9fcf",
     "pre_touch_build_version": "1.1.0",
-    "pre_touch_build_saved": true
+    "pre_touch_build_saved": true,
+    "local_id_display": "d1331f",
+    "name": "photo_print_mosaico",
+    "version": "1.1.0"
   }
 }

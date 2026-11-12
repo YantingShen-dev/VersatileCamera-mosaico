@@ -1,9 +1,11 @@
 #include "app_capture.h"
 #include "app_controls.h"
 #include "app_printer.h"
+#include "bsp/power.h"
 #include "driver/ppa.h"
 #include "esp_cache.h"
 #include "esp_heap_caps.h"
+#include "esp_iris.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_timer.h"
@@ -39,12 +41,29 @@ struct app_capture {
     HandDetect *detector = nullptr;
     HandGestureCls *gesture = nullptr;
     uint64_t last_gesture = 0;
+    uint64_t last_gesture_report = 0;
     mosaico_camera_handle_t camera = nullptr;
     ppa_client_handle_t ppa = nullptr;
     uint8_t *bgr = nullptr, *bitmap = nullptr;
     Preview previews[3];
     ppa_srm_oper_config_t conversion = {};
     std::atomic<bool> stop{false}, stopped{false};
+    std::atomic<int64_t> poweroff_at{0};
+    static esp_err_t poweroff_rpc(const esp_iris_rpc_request_t *request, uint8_t *response,
+                                  size_t capacity, size_t *size, void *context) {
+        if (!request || request->payload_size != 3 ||
+            memcmp(request->payload, "OFF", 3) != 0 || !response || capacity < 1 || !size)
+            return ESP_ERR_INVALID_ARG;
+        auto *self = static_cast<app_capture *>(context);
+        if (self->stop.load())
+            return ESP_ERR_INVALID_STATE;
+        // Give Iris time to acknowledge before the owner stops peripherals.
+        self->poweroff_at.store(esp_timer_get_time() + 250000);
+        app_printer_cancel();
+        response[0] = 1;
+        *size = 1;
+        return ESP_OK;
+    }
     static inline app_capture *shutdown_owner = nullptr;
     void publish() {
         state.connected = app_printer_ready();
@@ -177,17 +196,35 @@ struct app_capture {
         image.pix_type = dl::image::DL_IMAGE_PIX_TYPE_BGR888;
         auto &hands = detector->run(image);
         bool palm = false;
+        const char *category = "none";
+        float score = 0;
         if (hands.size() == 1) {
             const auto &hand = hands.front();
-            if (hand.score >= 0.65f && hand.box[2] - hand.box[0] >= 45 &&
+            // The small detector reports real palms around 0.4-0.6 on this camera.
+            // Let the dedicated gesture classifier and stable hold reject false triggers.
+            if (hand.score >= 0.35f && hand.box[2] - hand.box[0] >= 45 &&
                 hand.box[3] - hand.box[1] >= 45) {
                 std::vector<int> crop = {hand.box[0], hand.box[1], hand.box[2], hand.box[3]};
                 auto results = gesture->run_crop(image, crop);
                 if (!results.empty()) {
                     const auto &r = results.front();
+                    category = r.cat_name ? r.cat_name : "?";
+                    score = r.score;
                     palm = r.cat_name && strcmp(r.cat_name, "five") == 0 && r.score >= 0.80f;
                     ESP_LOGD(TAG, "Gesture %s %.2f", r.cat_name ? r.cat_name : "?", r.score);
                 }
+            }
+        }
+        uint64_t finished = esp_timer_get_time() / 1000;
+        if (finished - last_gesture_report >= 2000) {
+            last_gesture_report = finished;
+            ESP_LOGI(TAG, "Vision hands=%u gesture=%s score=%.2f palm=%d elapsed=%llu ms",
+                     (unsigned)hands.size(), category, score, palm,
+                     (unsigned long long)(finished - now));
+            if (!hands.empty()) {
+                const auto &h = hands.front();
+                ESP_LOGI(TAG, "Hand score=%.2f box=%d,%d,%d,%d", h.score,
+                         h.box[0], h.box[1], h.box[2], h.box[3]);
             }
         }
         photo_control_palm(&control, palm, esp_timer_get_time() / 1000);
@@ -227,6 +264,11 @@ struct app_capture {
         bool ready = setup();
         bool capture_pending = false;
         while (!stop.load()) {
+            int64_t deadline = poweroff_at.load();
+            if (deadline && esp_timer_get_time() >= deadline) {
+                stop.store(true);
+                break;
+            }
             app_printer_poll();
             state.connected = app_printer_ready();
             uint64_t now = esp_timer_get_time() / 1000;
@@ -307,6 +349,15 @@ struct app_capture {
         app_controls_stop(controls);
         ESP_LOGI(TAG, "Bluetooth stop: %s", esp_err_to_name(app_printer_stop()));
         stopped.store(true);
+        if (poweroff_at.load()) {
+            ESP_LOGI(TAG, "Host requested power off; peripherals stopped");
+            ESP_ERROR_CHECK_WITHOUT_ABORT(esp_iris_platform_mark_planned_restart());
+            ESP_ERROR_CHECK_WITHOUT_ABORT(bsp_power_prepare_sleep());
+            ESP_ERROR_CHECK_WITHOUT_ABORT(bsp_power_set_shutdown(true));
+            vTaskDelay(pdMS_TO_TICKS(500));
+            // If USB keeps the rail alive, leave the MCU and display asleep.
+            bsp_power_enter_deep_sleep();
+        }
         vTaskDelete(nullptr);
     }
 };
@@ -346,9 +397,15 @@ extern "C" esp_err_t app_capture_start(app_capture_handle_t a, app_photo_handle_
     esp_err_t e = esp_register_shutdown_handler(app_capture::shutdown);
     if (e)
         return e;
+    e = esp_iris_rpc_register(0x5048, 1, app_capture::poweroff_rpc, a);
+    if (e) {
+        esp_unregister_shutdown_handler(app_capture::shutdown);
+        return e;
+    }
     if (xTaskCreate([](void *ctx) { static_cast<app_capture *>(ctx)->run(); }, "photo_capture",
                     16384, a, 4, &a->task) != pdPASS) {
         esp_unregister_shutdown_handler(app_capture::shutdown);
+        esp_iris_rpc_unregister(0x5048, 1);
         app_capture::shutdown_owner = nullptr;
         return ESP_ERR_NO_MEM;
     }

@@ -6,6 +6,13 @@ to prefer PSRAM (`heap_caps_malloc_extmem_enable(0)`). ESP-DL's transient graph
 objects must not consume internal RAM needed by FreeRTOS and peripheral drivers;
 explicit internal/DMA-capability allocations are unaffected.
 
+Maintenance power-off uses Iris RPC service `0x5048`, method `1`, exact payload
+`OFF` (`4f4646`). It acknowledges one byte, cancels pending printing, then the
+capture owner stops camera/audio/buttons/Bluetooth and calls the official BSP
+shutdown signal. If USB keeps the board powered, BSP deep sleep is the fallback.
+Wake requires the board Power button/power cycle. This RPC is only available
+while this application is running; it never edits other Ideas.
+
 Owns the camera, PPA, two hand models, reusable PSRAM buffers, frozen image, timed
 controller and one 16KiB worker. Depends on app_photo/app_printer/app_controls and
 Espressif camera, ESP-DL and hand model components.

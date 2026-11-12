@@ -20,12 +20,13 @@ struct app_controls {
         mosaico_interact_handle_t board = nullptr;
         bool raw[2] = {}, stable[2] = {};
         uint64_t changed[2] = {};
+        uint64_t report_at = 0;
         bool first = true;
         while (!stop.load()) {
             if (!board) {
                 mosaico_interact_config_t config = MOSAICO_INTERACT_DEFAULT_CONFIG();
                 config.slot = MOSAICO_MODULE_MGR_SLOT_RIGHT;
-                config.button_mode = MOSAICO_INTERACT_BUTTON_MODE_AUTO;
+                config.button_mode = MOSAICO_INTERACT_BUTTON_MODE_GPIO;
                 config.led_brightness = 0;
                 esp_err_t e = mosaico_interact_open(&config, &board);
                 if (e != ESP_OK) {
@@ -53,6 +54,10 @@ struct app_controls {
             // With the module on the right, its printed RIGHT pad is the upper key.
             bool values[2] = {inputs.right_pressed, inputs.left_pressed};
             uint64_t now = esp_timer_get_time() / 1000;
+            if (now - report_at >= 5000) {
+                report_at = now;
+                ESP_LOGI("photo_buttons", "Input upper=%d lower=%d", values[0], values[1]);
+            }
             for (unsigned i = 0; i < 2; i++) {
                 if (first) {
                     raw[i] = stable[i] = values[i];
