@@ -6,8 +6,8 @@ so this component owns one static session, rather than exporting cross-component
 
 Initialize once from the camera worker; call poll while idle to discover/connect.
 Readiness is atomic. `app_printer_send` is single-caller, synchronous and must not run
-on a UI or Bluetooth callback task. It consumes a 12800-byte immutable bitmap, emits
-ESC @ and ONE GS v 0 image (320x320 dots), then feeds three lines.
+on a UI or Bluetooth callback task. It consumes a width*height/8-byte immutable bitmap, emits
+ESC @, ESC a center alignment and ONE GS v 0 image (384x384 dots), then feeds three lines.
 The pixel stream uses 256-byte chunks with 10 ms yields, without inserting
 new raster commands or feed instructions between chunks. Each write waits for
 the SPP completion event and congestion clearance, with 5-second waits and pacing.

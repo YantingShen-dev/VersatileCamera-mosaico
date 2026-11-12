@@ -3,97 +3,136 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-/* Simulation owns substitutes; app_photo and photo_bitmap are shared device code. */
+#ifdef _WIN32
+#include <windows.h>
+static uint64_t now_ms(void) { return GetTickCount64(); }
+#else
+#include <time.h>
+static uint64_t now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec * 1000 + t.tv_nsec / 1000000;
+}
+#endif
 static struct {
     app_photo_handle_t ui;
-    photo_state_t state;
+    photo_control_t control;
     uint8_t *bgr, *bits;
-    uint16_t *color, *mono;
-    unsigned sending_ticks, prints;
-    bool fail;
+    uint16_t *mono;
+    unsigned prints, beeps, shutters;
+    uint64_t sent_at;
+    bool fail, rendered;
+    photo_filter_t rendered_filter;
 } backend;
 static void release(void *ctx) { (void)ctx; }
+static void render(void) {
+    photo_filter_apply(backend.bgr, backend.bits, backend.control.state.filter);
+    photo_bitmap_preview(backend.bits, backend.mono);
+    app_photo_present(backend.ui, backend.mono, release, NULL);
+    backend.rendered = true;
+    backend.rendered_filter = backend.control.state.filter;
+}
 static bool poll(void *ctx, photo_state_t *out) {
     (void)ctx;
+    uint64_t now = now_ms();
     const char *path = getenv("PHOTO_SIM_STATE");
+    bool palm = false;
     if (path) {
         FILE *file = fopen(path, "r");
         if (file) {
-            char text[32] = {0};
+            char text[64] = {0};
             fgets(text, sizeof(text), file);
             fclose(file);
-            backend.state.connected = strncmp(text, "offline", 7) != 0;
-            backend.fail = strncmp(text, "fail", 4) == 0;
+            backend.control.state.connected = strstr(text, "offline") == NULL;
+            backend.fail = strstr(text, "fail") != NULL;
+            palm = strstr(text, "palm") != NULL;
         }
     }
-    if (backend.sending_ticks && !--backend.sending_ticks) {
-        backend.state.mode = backend.fail ? PHOTO_FAILED : PHOTO_SENT;
-        fprintf(stderr, "PHOTO_SIM completed mode=%d prints=%u\n", backend.state.mode, backend.prints);
+    photo_control_palm(&backend.control, palm, now);
+    photo_control_tick(&backend.control, now);
+    unsigned a = photo_control_take_actions(&backend.control);
+    if (a & PHOTO_DO_BEEP)
+        ++backend.beeps;
+    if (a & PHOTO_DO_CAPTURE) {
+        render();
+        ++backend.shutters;
+        photo_control_captured(&backend.control, true);
     }
+    if (a & PHOTO_DO_PRINT) {
+        ++backend.prints;
+        backend.sent_at = now;
+    }
+    if (backend.control.state.mode == PHOTO_SENDING && now - backend.sent_at >= 1800)
+        photo_control_printed(&backend.control, !backend.fail);
+    if (!backend.rendered || backend.rendered_filter != backend.control.state.filter)
+        render();
     if (path) {
         char output[512];
         snprintf(output, sizeof(output), "%s.result", path);
-        FILE *file = fopen(output, "w");
-        if (file) {
-            fprintf(file, "%d %u %lu %d", backend.state.mode, backend.prints,
-                    (unsigned long)backend.state.response, backend.state.connected);
-            fclose(file);
+        FILE *f = fopen(output, "w");
+        if (f) {
+            fprintf(f, "%d %u %lu %d %d %u %u %u", backend.control.state.mode, backend.prints,
+                    (unsigned long)backend.control.state.response, backend.control.state.connected,
+                    backend.control.state.filter, backend.control.state.countdown, backend.beeps,
+                    backend.shutters);
+            fclose(f);
         }
     }
-    *out = backend.state;
+    *out = backend.control.state;
     return true;
 }
 static bool command(void *ctx, photo_command_t cmd) {
     (void)ctx;
-    ++backend.state.response;
-    if (cmd == PHOTO_CAPTURE) {
-        photo_dither(backend.bgr, backend.bits);
-        photo_bitmap_preview(backend.bits, backend.mono);
-        app_photo_present(backend.ui, backend.mono, release, NULL);
-        backend.state.mode = PHOTO_REVIEW;
-    }
-    if (cmd == PHOTO_RETAKE) {
-        app_photo_present(backend.ui, backend.color, release, NULL);
-        backend.state.mode = PHOTO_LIVE;
-    }
-    if (cmd == PHOTO_PRINT) {
-        backend.state.mode = PHOTO_SENDING;
-        backend.sending_ticks = 20;
-        ++backend.prints;
-    }
-    fprintf(stderr, "PHOTO_SIM command=%d mode=%d prints=%u response=%lu\n", cmd, backend.state.mode,
-            backend.prints, (unsigned long)backend.state.response);
+    photo_control_button(&backend.control, cmd, now_ms());
     return true;
 }
 esp_gsp_err_t gsp_bridge_app_init(esp_gsp_handle_t ui) {
-    backend.state.mode = PHOTO_LIVE;
-    backend.state.connected = true;
+    photo_control_init(&backend.control);
+    backend.control.state.mode = PHOTO_LIVE;
+    backend.control.state.connected = true;
+    backend.control.state.gesture_ready = true;
+    backend.control.state.audio_ready = true;
     backend.bgr = calloc(PHOTO_SIDE * PHOTO_SIDE, 3);
     backend.bits = calloc(PHOTO_BYTES, 1);
-    backend.color = calloc(PHOTO_SIDE * PHOTO_SIDE, 2);
     backend.mono = calloc(PHOTO_SIDE * PHOTO_SIDE, 2);
-    if (!backend.bgr || !backend.bits || !backend.color || !backend.mono)
+    if (!backend.bgr || !backend.bits || !backend.mono)
         return ESP_GSP_ERR_NO_MEM;
-    for (unsigned y = 0; y < PHOTO_SIDE; ++y)
-        for (unsigned x = 0; x < PHOTO_SIDE; ++x) {
-            unsigned i = y * PHOTO_SIDE + x;
-            uint8_t *p = backend.bgr + i * 3;
-            p[0] = x * 255 / 319;
-            p[1] = y * 255 / 319;
-            p[2] = 180;
-            backend.color[i] = ((p[2] & 0xf8) << 8) | ((p[1] & 0xfc) << 3) | (p[0] >> 3);
+    for (unsigned y = 0; y < PHOTO_SIDE; y++)
+        for (unsigned x = 0; x < PHOTO_SIDE; x++) {
+            unsigned v = 225 - y * 80 / PHOTO_SIDE;
+            if (y > PHOTO_SIDE * 2 / 3)
+                v = 50 + (x + y) % 70;
+            int dx = (int)x - 290, dy = (int)y - 80;
+            if (dx * dx + dy * dy < 27 * 27)
+                v = 255;
+            if (y > 230 - abs((int)x - 110) && y < 260)
+                v = 75 + x / 5;
+            if (x > 200 && x < 310 && y > 180 && y < 300)
+                v = 120;
+            if (x > 215 && x < 245 && y > 210 && y < 245)
+                v = 230;
+            if (x > 257 && x < 290 && y > 245 && y < 300)
+                v = 25;
+            uint8_t *p = backend.bgr + (y * PHOTO_SIDE + x) * 3;
+            p[0] = p[1] = p[2] = (uint8_t)v;
         }
+    const char *input = getenv("PHOTO_SIM_BGR");
+    if (input) {
+        FILE *f = fopen(input, "rb");
+        if (f) {
+            size_t n = fread(backend.bgr, 1, PHOTO_SIDE * PHOTO_SIDE * 3, f);
+            fclose(f);
+            if (n != PHOTO_SIDE * PHOTO_SIDE * 3)
+                return ESP_GSP_ERR_INVALID_ARG;
+        }
+    }
     photo_provider_t provider = {.poll = poll, .command = command};
-    esp_gsp_err_t err = app_photo_create(ui, &provider, &backend.ui);
-    if (err)
-        return err;
-    return app_photo_present(backend.ui, backend.color, release, NULL);
+    return app_photo_create(ui, &provider, &backend.ui);
 }
 void gsp_bridge_app_deinit(esp_gsp_handle_t ui) {
     (void)ui;
     app_photo_destroy(&backend.ui);
     free(backend.bgr);
     free(backend.bits);
-    free(backend.color);
     free(backend.mono);
 }

@@ -1,54 +1,61 @@
-# 拍照打印 Idea
+# CCD 拍照打印 Idea
 
-独立应用 `projects/photo_print_mosaico`，使用 ESP-Mosaico 左侧摄像头取景，点击“拍照”后显示黑白点阵预览，再点击“确认打印”向 RPP02N 发送照片。也可以“重拍”。照片仅在内存中，退出或断电即丢弃。
+`photo_print_mosaico` 1.1.0：Mosaico 左侧摄像头、右侧 Interaction 双按钮板，直接通过 Classic Bluetooth SPP 连接 RPP02N / T3-GZP 热敏打印机。开机即取景，拍后先预览，确认才打印，不需要手机 App 或电脑中转。照片只存在内存里。
 
-已保存到本机 Idea 库：`photo_print_mosaico`，版本 `1.0.0`，本地标识 `ddfc02`。进入 Vibe Mode 后在“我的 Ideas”或“管理”中选择运行；这个本地标识不是社区下载码。
+## 操作
 
-## 使用
+| 状态 | 上方按钮 1 | 下方按钮 2 |
+| --- | --- | --- |
+| 取景 | 快门音后拍照 | 进入滤镜选择 |
+| 滤镜选择 | 上一项 | 单击下一项；350ms 内双击确认退出 |
+| 五秒倒计时 | 立即拍照 | 取消倒计时 |
+| 拍后预览 / 已发送 / 失败 | 打印，必须蓝牙已连接 | 重拍 |
+| 正在拍照 / 发送 | 忽略重复输入 | 忽略重复输入 |
 
-1. 摄像头在左侧，打印机开机、装纸，并断开手机 App 的蓝牙连接。
-2. 右上角显示“RPP02N / 已连接”后可打印；未连接也可拍照和预览。
-3. 点击“拍照”，检查黑白画面，点击“确认打印”或“重拍”。
-4. 发送期间锁定按钮；完成显示“已发送 / 请检查出纸”，再打印必须主动点击。
+屏幕底部两个触摸按钮与实体按键含义一致。右侧模块旋转安装时，上方键对应模块 `right_pressed`，下方键对应 `left_pressed`；按键防抖 40ms，按住不会重复触发。
 
-“已发送”仅指蓝牙传输完成。本版不读取缺纸、温度或机械出纸完成状态。失败可能已有部分纸张输出，先检查实物再决定是否重试，不会自动重打。
+五指张开的手掌须稳定识别至少 700ms，才启动 5 秒倒计时，依次显示 5/4/3/2/1 并请求五次短提示音，然后发出机械快门音、拍照。持续举手不会重复触发；手掌离开至少 800ms 后重新允许触发。滤镜选择、预览和打印中不启动手势拍照。
 
-## 硬件和协议
+## 滤镜与纸面
 
-- ESP32-S31；固定 ESP-IDF `7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`。
-- T3-GZP 6009 / RPP02N，地址 `86:67:7A:63:30:A8`，PIN `0000`。
-- Classic SPP 客户端，通过 SDP 查询服务通道。
-- 320×320 中央方形裁切，有序抖动，40 字节/行，黑点为 1，MSB-first。
-- ESC @ 初始化，GS v 0 整张 320 行仅发送一条指令，像素流每块 256 字节，等待 SPP 完成/拥塞解除并短暂让出 CPU。
-- 屏幕黑白预览与发送点阵使用同一份冻结位图。
+- 正常黑白：4×4 有序抖动，保留灰度层次。
+- 黑白反色：对正常点阵逐位反色。
+- 黑白波点：8×8 网格圆形聚簇网点。
+- 阈值版画：局部锐化后固定阈值，形成硬边黑白块。
+- ASCII：6×8 字符单元，把局部亮度映射为不同密度的字符。
 
-## 代码
+五种滤镜实时处理，拍照后冻结同一份点阵供预览和打印；取景框、状态和倒计时不进入打印图。相机从 1024×768 中央裁出 768×768、旋转、缩至 384×384，输出打印头的整个 384 点有效宽度。58mm 纸的物理边缘仍会留不可打印区域。
+
+打印采用 ESC @ 初始化、ESC a 居中、**一条完整 GS v 0 光栅指令**，48 字节/行，像素流按 256 字节分块，等待 SPP 完成/拥塞释放，间隔 10ms。禁止恢复成多条短条光栅指令，否则此打印机可能出现白色横纹和走纸停顿。当前宽度配置是 `photo_control.h` 中的 PHOTO_SIDE=384，实际打印位置需以实机验证为准。
+
+“已发送”只表示蓝牙数据发送完成，不表示打印机的纸张/温度/机械状态已确认。失败后不自动重打，原照片保留，用户可检查纸张后决定再试。
+
+## 模块
 
 | 目录 | 职责 |
 | --- | --- |
-| components/app_photo | 共享 GSP UI、状态和点阵转换 |
-| components/app_capture | 摄像头、PPA、照片和缓冲区生命周期 |
-| components/app_printer | 配对、连接、分块打印 |
-| components/app_display | 官方模板显示和触摸适配 |
-| main | 启动和组件组装 |
-| tools | 字体/场景生成、模拟器验证 |
+| components/app_photo | 共享 CCD UI、状态机、五种点阵滤镜 |
+| components/app_capture | 摄像头/PPA、冻结照片、离线手势识别、工作队列 |
+| components/app_controls | 右侧实体键、独立扬声器音效任务 |
+| components/app_printer | Classic SPP 配对、连接、整图传输 |
+| components/app_display | 官方显示与触摸适配 |
+| tools | 场景生成、模拟器交互测试、点阵与状态机测试 |
 
-## 构建和安装
+手势模型固定使用 espressif/hand_detect 0.2.1、hand_gesture_recognition 0.2.1、esp-dl 3.3.14。先检测一只足够大的手，再识别 `five` 类别（置信度至少 0.80）；仅凭 PIR 动作传感器不会触发拍照。模型在设备本地执行，不上传摄像头图像。
 
-按仓库 README 激活固定 SDK，从仓库根目录运行：
+## 构建与安装
+
+ESP-IDF 必须为 `7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`，目标 esp32s31。按仓库 README 配置环境，从仓库根目录运行：
 
 ```powershell
-$env:MOSAICO_MANAGED_COMPONENTS_PATH = Join-Path $PWD 'projects/photo_print_mosaico/managed_components'
 python submodule/esp-mosaico-utils/mosaico-tools/skills/idf-low-noise-build/scripts/idf_low_noise_build.py --project projects/photo_print_mosaico doctor
 python submodule/esp-mosaico-utils/mosaico-tools/skills/idf-low-noise-build/scripts/idf_low_noise_build.py --project projects/photo_print_mosaico build
 python mosaico.py iris system-update --project projects/photo_print_mosaico
 ```
 
-Windows 推荐短英文源码和构建路径。本机辅助入口在父目录 `photo-print-build.ps1`。安装保留 Vibe Mode；验收后在 Vibe Mode 的“开发 → 保存当前开发版”存入 Idea 库。
+本机辅助入口位于父目录 `photo-print-build.ps1`。Windows 推荐短英文构建路径与 managed_components 实际路径；本机已配置目录联接。UI 资源或模型变化需 system-update，保留既有 Vibe Mode，不整片擦除。退出前停止摄像头、音效/按键和蓝牙控制器，以正常软件重启切换应用。
 
-## 模拟器
-
-激活 SDK 和 GSP 主机工具，从仓库根目录运行：
+## 模拟器和验证
 
 ```powershell
 $env:CMAKE_GENERATOR = 'Ninja'
@@ -56,14 +63,20 @@ $env:PHOTO_SIM_STATE = 'D:/photo-sim-state.txt'
 python mosaico.py project sim --project projects/photo_print_mosaico --interactive
 ```
 
-另一个终端使用相同的 PHOTO_SIM_STATE，安装 Pillow 和 websockets，再运行 `python projects/photo_print_mosaico/tools/check_sim.py`。状态文件使用短英文路径，避免原生 Windows fopen 对 Unicode 路径的限制。
+浏览器打开输出的 localhost 地址。底部两键可操作真实共享 C 状态机。原生模拟器的相机、打印机、手势分类结果及扬声器为替身，不代表这些硬件已经验收。
 
-验证通过触摸事件驱动真实 UI，检查拍照、重拍、离线阻止打印、连点去重、失败保留照片。摄像头和蓝牙使用替身，不能代替硬件验收。修改字体时用 PHOTO_FONT_SOURCE 指向 NotoSansSC-Regular.ttf，再运行 tools/make_scene.py。
+若原生模拟器位于 `http://127.0.0.1:3222/`，可在另一终端启动手势/连接状态控制面板：
 
-## 验证记录
+```powershell
+python projects/photo_print_mosaico/tools/sim_controls.py --state D:/photo-sim-state.txt
+```
 
-2026-11-12，Windows 已验证此打印机的 SPP 文本和 GS v 0 棋盘格位图出纸。本应用原生模拟器交互通过，截图位于仓库忽略提交的 evidence/photo-sim-*。实机已验证拍照、预览和蓝牙打印。初版短条分段打印出现横向白纹及走纸停顿，改为整张 GS v 0 指令后，用户确认横纹消失、走纸连贯。随后补充退出时关闭蓝牙协议栈和控制器，实测软件切回 Vibe Mode 的 reset_reason=3、crash_count=0。
+打开 `http://127.0.0.1:3223/`；其中嵌入同一个原生模拟器，可模拟举手、移手、断线和发送失败。`--state` 必须与原生模拟器的 `PHOTO_SIM_STATE` 指向同一个文件。控制面板只监听本机，不会连接真实打印机。
 
-## 安装包
+使用相同 PHOTO_SIM_STATE 运行 `tools/check_sim.py` 可自动通过触摸事件测试五滤镜、双击确认、离线保护、发送去重、失败保留照片、五秒倒计时及移手重触发。开发依赖见 `tools/requirements-dev.txt`。手动将状态文件写成 `online palm` 可模拟已识别五指手掌，写成 `online` 模拟移开；`offline` 与 `fail` 分别模拟断线与打印失败。
 
-本地 `firmware/photo_print_mosaico-1.0.0.irisfw` 是完整应用与 UI 资源包，校验信息见 `firmware/release.json`。二进制安装包不纳入 Git，换电脑时需单独复制或按源码重新构建。通过仓库官方 `mosaico.py iris system-update` 安装；具体包参数可查看该命令的 `--help`。
+`tools/photo_control_test.c` 验证倒计时、五次提示音事件、取消、双击和去重；`tools/photo_bitmap_test.c` 验证灰度、反色、位序和预览/打印一致。模型真实识别、按键方向、声音和纸面宽度需要实物验证。
+
+## 已有版本
+
+1.0.0 已保存于这台设备的 Idea 库，本地标识 `ddfc02`（不是社区下载码），原版本实测打印无横纹、走纸连贯。源码提交 `a27420d` 已推送 `feat/photo-print-idea`。1.1.0 的最终安装包与实机验证记录将在验收后更新到 `firmware/release.json`；`.irisfw` 安装包保留在本地，不纳入 Git。

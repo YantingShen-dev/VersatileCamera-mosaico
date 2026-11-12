@@ -21,6 +21,6 @@ endif()
 
 add_subdirectory("${ESP_GSP_COMPONENT_DIR}/tools/sim_bridge" sim_bridge)
 gsp_add_backend(photo_backend
-    SOURCES ../app_photo.c ../photo_bitmap.c photo_pc.c
+    SOURCES ../app_photo.c ../photo_bitmap.c ../photo_control.c photo_pc.c
     INCLUDE_DIRECTORIES ../include
     SCENES ../ui/main.json)

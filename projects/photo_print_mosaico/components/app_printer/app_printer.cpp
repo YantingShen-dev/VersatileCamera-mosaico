@@ -34,8 +34,8 @@ void spp(esp_spp_cb_event_t event, esp_spp_cb_param_t *p) {
         if (printer.cancelled.load())
             break;
         if (p->disc_comp.status == ESP_SPP_SUCCESS && p->disc_comp.scn_num > 0) {
-            esp_err_t e = esp_spp_connect(ESP_SPP_SEC_AUTHENTICATE, ESP_SPP_ROLE_MASTER, p->disc_comp.scn[0],
-                                          printer.address);
+            esp_err_t e = esp_spp_connect(ESP_SPP_SEC_AUTHENTICATE, ESP_SPP_ROLE_MASTER,
+                                          p->disc_comp.scn[0], printer.address);
             if (e != ESP_OK)
                 printer.connecting.store(false);
         } else
@@ -171,24 +171,39 @@ extern "C" esp_err_t app_printer_stop(void) {
     printer.handle.store(0);
     return e;
 }
-extern "C" esp_err_t app_printer_send(const uint8_t *bitmap) {
-    if (!bitmap || !app_printer_ready())
+extern "C" esp_err_t app_printer_send(const uint8_t *bitmap, unsigned width, unsigned height) {
+    if (!bitmap || !width || width > 384 || width % 8 || !height || height > 2048)
+        return ESP_ERR_INVALID_ARG;
+    if (!app_printer_ready())
         return ESP_ERR_INVALID_STATE;
-    uint8_t init[] = {0x1b, 0x40};
+    // Reset then center within the printer's printable line (not the paper edges).
+    uint8_t init[] = {0x1b, 0x40, 0x1b, 0x61, 0x01};
     esp_err_t e = write_packet(init, sizeof(init));
     if (e)
         return e;
-    // ONE raster command for the full 320-row image. Repeated short GS v 0
+    // ONE raster command for the complete image. Repeated short GS v 0
     // commands can insert feed/rounding gaps in this printer's firmware.
-    uint8_t header[] = {0x1d, 0x76, 0x30, 0, 40, 0, 0x40, 0x01};
+    uint8_t header[] = {0x1d,
+                        0x76,
+                        0x30,
+                        0,
+                        (uint8_t)(width / 8),
+                        0,
+                        (uint8_t)(height & 255),
+                        (uint8_t)(height >> 8)};
     e = write_packet(header, sizeof(header));
     if (e)
         return e;
-    for (unsigned pos = 0; pos < 12800; pos += sizeof(printer.packet)) {
-        memcpy(printer.packet, bitmap + pos, sizeof(printer.packet));
-        e = write_packet(printer.packet, sizeof(printer.packet));
+    const unsigned total = width * height / 8;
+    for (unsigned pos = 0; pos < total;) {
+        unsigned count = total - pos;
+        if (count > sizeof(printer.packet))
+            count = sizeof(printer.packet);
+        memcpy(printer.packet, bitmap + pos, count);
+        e = write_packet(printer.packet, count);
         if (e)
             return e;
+        pos += count;
     }
     uint8_t feed[] = {0x0a, 0x0a, 0x0a};
     e = write_packet(feed, sizeof(feed));

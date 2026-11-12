@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import struct
+import time
 from pathlib import Path
 
 from PIL import Image
@@ -66,58 +67,61 @@ async def main():
                 raise RuntimeError(result)
             return result.get("result")
 
-        async def tap(x, y):
+        async def tap(x, y, delay=0.6):
             await rpc("feed_pointer", dict(x=x, y=y, pressed=True))
             await asyncio.sleep(0.08)
             await rpc("feed_pointer", dict(x=x, y=y, pressed=False))
-            await asyncio.sleep(0.6)
+            await asyncio.sleep(delay)
 
         async def capture(name):
             await asyncio.sleep(0.25)
             image.save(EVIDENCE / f"photo-sim-{name}.png")
             print(name, flush=True)
 
-        def expect(mode, prints):
-            values=Path(str(STATE)+".result").read_text().split()
-            assert int(values[0])==mode and int(values[1])==prints, (mode,prints,values)
+        def expect(mode, prints=None, filter_id=None):
+            values=[]
+            for _ in range(20):
+                try: values=list(map(int,Path(str(STATE)+".result").read_text().split()))
+                except (OSError,ValueError): values=[]
+                if len(values)==8 and values[0]==mode:break
+                time.sleep(0.03)
+            assert values[0]==mode,(mode,values)
+            if prints is not None:assert values[1]==prints,(prints,values)
+            if filter_id is not None:assert values[4]==filter_id,(filter_id,values)
+            return values
 
-        caps = await rpc("capabilities")
-        print("Native backend active, runtime", caps["runtime_version"], flush=True)
-        STATE.write_text("online", encoding="ascii")
+        caps=await rpc("capabilities")
+        print("Native backend active, runtime",caps["runtime_version"],flush=True)
+        STATE.write_text("online",encoding="ascii")
         await asyncio.sleep(0.5)
-        await capture("live")
-        expect(1, 0)
-        await tap(240, 450)
-        await capture("review")
-        expect(2, 0)
-        await tap(100, 450)
-        await capture("retake")
-        expect(1, 0)
-        await tap(240, 450)
-        STATE.write_text("offline", encoding="ascii")
-        await asyncio.sleep(0.3)
-        await tap(340, 450)
-        await capture("offline-does-not-print")
-        expect(2, 0)
-        STATE.write_text("online", encoding="ascii")
-        await asyncio.sleep(0.3)
-        await tap(340, 450)
-        await capture("sending")
-        expect(3, 1)
-        await tap(340, 450)
-        await asyncio.sleep(1.5)
-        await capture("sent-once")
-        expect(4, 1)
-        STATE.write_text("fail", encoding="ascii")
-        await asyncio.sleep(0.3)
-        await tap(340, 450)
-        await asyncio.sleep(2.2)
-        await capture("failed-photo-kept")
-        expect(5, 2)
-        STATE.write_text("online", encoding="ascii")
-        await tap(100, 450)
-        await capture("return-to-camera")
-        expect(1, 2)
+        await capture("ccd-live");expect(1,0,0)
+        await tap(350,457);expect(7,0,0)
+        for index in range(5):
+            await capture(f"filter-{index}");expect(7,0,index)
+            if index<4:await tap(350,457)
+        await tap(350,457,0.08);await tap(350,457,0.2)
+        expect(1,0,4)
+        await tap(110,457);await capture("ccd-review");expect(2,0,4)
+        STATE.write_text("offline",encoding="ascii");await asyncio.sleep(0.2)
+        await tap(110,457);expect(2,0)
+        STATE.write_text("online",encoding="ascii");await asyncio.sleep(0.2)
+        await tap(110,457,0.08);await tap(110,457,0.2);expect(3,1)
+        await asyncio.sleep(1.8);expect(4,1)
+        STATE.write_text("fail",encoding="ascii");await asyncio.sleep(0.2)
+        await tap(110,457);await asyncio.sleep(1.9);expect(5,2)
+        await capture("ccd-failed-photo-kept")
+        await tap(350,457);expect(1,2)
+        STATE.write_text("online palm",encoding="ascii")
+        await asyncio.sleep(1.0);v=expect(8,2);base_beeps=v[6]-1
+        await capture("ccd-countdown")
+        await asyncio.sleep(4.9);v=expect(2,2);assert v[6]-base_beeps==5,v
+        await tap(350,457);await asyncio.sleep(1.2);expect(1,2)
+        STATE.write_text("online",encoding="ascii");await asyncio.sleep(1.0)
+        STATE.write_text("online palm",encoding="ascii");await asyncio.sleep(1.0);expect(8,2)
+        await tap(350,457);await asyncio.sleep(1.0);expect(1,2)
+        STATE.write_text("online",encoding="ascii")
+        await capture("ccd-ready")
+        print("PASS: all filters, double click preserves selection, preview/print/retry, palm countdown/rearm/cancel",flush=True)
         reader.cancel()
 
 

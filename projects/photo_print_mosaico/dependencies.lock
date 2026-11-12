@@ -137,6 +137,44 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 1.1.0
+  espressif/dl_fft:
+    component_hash: 965be7152132b365061abf5fc5fc7b85e525f73b94a204cdda61cfe9572c0d77
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.8.0
+  espressif/esp-dl:
+    component_hash: 3608ac32875cb7fa93805fba2372619bde3d8a02cee47c622cf5e91a1308fe92
+    dependencies:
+    - name: espressif/dl_fft
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=0.8.0'
+    - name: espressif/esp_new_jpeg
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^1
+    - name: idf
+      require: private
+      version: '*'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32
+    - esp32c2
+    - esp32c3
+    - esp32c5
+    - esp32c6
+    - esp32p4
+    - esp32s2
+    - esp32s3
+    - esp32s31
+    version: 3.3.14
   espressif/esp-gsp:
     component_hash: 595b3b435cc42c830dae327de8944a4d78002133ca9c013729fa04b777c63945
     dependencies:
@@ -475,6 +513,28 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 2.14.3~1
+  espressif/hand_detect:
+    component_hash: 9118a724be3b62c1107644d2a0b0d3cd902f983e7877174b119ed885faa6d985
+    dependencies:
+    - name: espressif/esp-dl
+      registry_url: https://components.espressif.com
+      require: private
+      version: ~3.3.14
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.2.1
+  espressif/hand_gesture_recognition:
+    component_hash: 8af6dca31b0b263da350605cb58a8930f12ca3c7999259d2a510797e6d862e10
+    dependencies:
+    - name: espressif/hand_detect
+      registry_url: https://components.espressif.com
+      require: private
+      version: ~0.2.0
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.2.1
   espressif/i2c_bus:
     component_hash: 483112c1619c54c38d0b734fb25f1678733267858a77b7af2f48cc7db6dbbd84
     dependencies:
@@ -503,6 +563,16 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 1.1.0
+  espressif/led_strip:
+    component_hash: 027f68f2b57b0dca1d68dff6cc1139d9093825aa808c2bc3ca42bb2ce530fce9
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.2'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 3.1.1
   espressif/libpng:
     component_hash: 9a576d8fbd0ddb29330e1f4c4fe82470b3e0e7eca71ea3bc4dce168d0b1088e3
     dependencies:
@@ -552,7 +622,7 @@ dependencies:
       type: service
     version: 1.4.4
   espressif/tinyusb:
-    component_hash: a9b4a654cd7239b2d7d6240465a773e06fe7b689e5971ea79ba651d0c1101644
+    component_hash: 95e10bf67a64897daadb95681c032cfbbdc77240931fc23f47709a254a3db290
     dependencies:
     - name: idf
       require: private
@@ -566,7 +636,104 @@ dependencies:
     - esp32p4
     - esp32h4
     - esp32s31
-    version: 0.21.0~5
+    version: 0.21.0~6
+  espressif/touch_button:
+    dependencies:
+    - name: idf
+      version: '>=5.5'
+    - name: espressif/cmake_utilities
+      version: 0.*
+    - name: espressif/button
+      public: true
+      version: ^4
+    - name: espressif/touch_button_sensor
+      public: true
+      version: ^0.3.0
+    source:
+      path: ../../submodule/esp-mosaico-bsp/components/touch_button
+      type: local
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    - esp32h4
+    - esp32s31
+    version: 1.0.0
+  espressif/touch_button_sensor:
+    component_hash: 9d445d8a5f830ed08a31e00e1ce5e2b3d46b0065173ccda9723ab7b779819afd
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.*
+    - name: espressif/touch_sensor_fsm
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^0.9.0
+    - name: espressif/touch_sensor_lowlevel
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^1.0.1
+    - name: idf
+      require: private
+      version: '>=5.5'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    - esp32h4
+    - esp32s31
+    - linux
+    version: 0.3.0
+  espressif/touch_sensor_fsm:
+    component_hash: 7151135afb3149dac82f281b1081368a3b54764b8d86c0a2f48ca6c5e1d5a19b
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.*
+    - name: idf
+      require: private
+      version: '>=5.5,<6.3'
+    - name: espressif/touch_sensor_lowlevel
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^1.0.1
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    - esp32h4
+    - esp32s31
+    - linux
+    version: 0.9.1~1
+  espressif/touch_sensor_lowlevel:
+    component_hash: 8adc601d342f5b110cb0a765e15072bec1a17e4f8dba8d009d66c9a14a2e5466
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.*
+    - name: idf
+      require: private
+      version: '>=5.5'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    - esp32h4
+    - esp32s31
+    - linux
+    version: 1.0.2
   espressif/usb:
     component_hash: 99eee72ea224d9117d4c342442717a1f20bf8112e2ab5d7d7038b827874f4c92
     dependencies:
@@ -649,6 +816,31 @@ dependencies:
     targets:
     - esp32s31
     version: 0.2.0
+  mosaico_module_interact:
+    dependencies:
+    - name: idf
+      version: '>=6.2'
+    - name: esp-mosaico-bsp
+      override_path: ../esp-mosaico-bsp
+      public: true
+      version: ^0.2
+    - name: mosaico_module_mgr
+      override_path: ../mosaico_module_mgr
+      public: true
+      version: ^0.1
+    - name: espressif/led_strip
+      version: ^3.0.3
+    - name: espressif/touch_button
+      path: ../touch_button
+      version: ^1.0
+    - name: espressif/touch_sensor_lowlevel
+      version: ^1.0.1
+    source:
+      path: ../../submodule/esp-mosaico-bsp/components/mosaico_module_interact
+      type: local
+    targets:
+    - esp32s31
+    version: 0.1.0
   mosaico_module_mgr:
     dependencies:
     - name: esp-mosaico-bsp
@@ -664,11 +856,15 @@ dependencies:
 direct_dependencies:
 - esp-mosaico-bsp
 - esp_iris
+- espressif/esp-dl
 - espressif/esp-gsp
 - espressif/esp_video
+- espressif/hand_detect
+- espressif/hand_gesture_recognition
 - idf
 - lvgl/lvgl
 - mosaico_module_camera
-manifest_hash: 476418fff7f57cbd2ab5ff50839b0e2b6e56e1bb2a0737d68fd566d29a5412d9
+- mosaico_module_interact
+manifest_hash: e7e136098d89a774da48871befabb5614293b38dbce30d26876b543d5ac2cb15
 target: esp32s31
 version: 3.0.0

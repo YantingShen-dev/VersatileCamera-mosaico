@@ -1,0 +1,65 @@
+{
+  "application": "photo_print_mosaico",
+  "version": "1.1.0",
+  "date": "2026-11-13",
+  "status": "candidate: startup verified; physical acceptance pending",
+  "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
+  "firmware_elf_sha256": "7177bf270ed578b35cbd8c0a68848a2c043a679ed366f1333df43c3154148288",
+  "bundle": "photo_print_mosaico-1.1.0.irisfw",
+  "bundle_bytes": 2339036,
+  "bundle_sha256": "c8cda74d116cfde62e190c0c3e03e100ce554f8287022b7206ed41a50c81a71a",
+  "manifest": {
+    "components": [
+      {
+        "file": "partition-table.bin",
+        "id": 1,
+        "kind": "partition_table",
+        "sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12",
+        "size": 4096,
+        "target_offset": 32768
+      },
+      {
+        "file": "ota_0.bin",
+        "id": 2,
+        "kind": "application",
+        "sha256": "14be5317008b00e9654ad37a75dca859ebb54284c30600fb8ab46339a678a3bb",
+        "size": 5833712,
+        "target_offset": 2162688
+      },
+      {
+        "file": "ui_apps.bin",
+        "id": 3,
+        "kind": "data",
+        "sha256": "8aa486cd4bbabd97565b81df9e306089481ad539e43711de5709cb927ab3fb1f",
+        "size": 263952,
+        "target_offset": 15728640
+      }
+    ],
+    "minimum_recovery_version": "0.2.0",
+    "release": "1.1.0",
+    "schema": "esp-iris-system-update/0.2",
+    "target": {
+      "chip_id": 32,
+      "flash_size": 16777216
+    },
+    "target_layout_sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12"
+  },
+  "validation": {
+    "state_machine_unit": "passed",
+    "bitmap_unit": "passed: five filters and exact preview",
+    "native_simulator": "passed: five filters, double click, countdown, rearm, retake, offline, duplicate print and failure",
+    "startup": "passed: camera, interaction board, speaker, models and printer Bluetooth ready; crash_count=0",
+    "stability": "same boot after 159 seconds; free internal 85247 bytes; minimum 45956 bytes",
+    "operation_id": "15bbe954-6843-4818-abc4-e3784c709128",
+    "boot_id": "2351538134360507804",
+    "physical_buttons": "pending user feedback",
+    "gesture_and_sound": "pending user feedback",
+    "physical_print": "pending user feedback: width, centering and continuous feed",
+    "normal_to_vibe": "pending with final audio configuration"
+  },
+  "idea": {
+    "saved": false,
+    "previous_version": "1.0.0",
+    "previous_local_id_display": "ddfc02"
+  }
+}

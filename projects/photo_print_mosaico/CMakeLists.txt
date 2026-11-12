@@ -13,7 +13,7 @@ list(APPEND EXTRA_COMPONENT_DIRS
     "${MOSAICO_UTILS_ROOT}/mosaico-tools/components/esp_mosaico_gsp_bundle"
     "${MOSAICO_UTILS_ROOT}/mosaico-tools/components/esp_mosaico_gsp_iris")
 include("${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/cmake/mosaico_idf_project.cmake")
-project(photo_print_mosaico VERSION 1.0.0)
+project(photo_print_mosaico VERSION 1.1.0)
 # The registry delivers CRLF sensor sources on Windows; apply the BSP's exact
 # reviewed timing patch with whitespace tolerance, retaining idempotence.
 set(face_sensor_patch "${MOSAICO_BSP_ROOT}/components/mosaico_module_camera/patches/esp-cam-sensor-sc101iot-pclk-delay.patch")

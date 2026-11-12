@@ -13,8 +13,8 @@ bool app_printer_ready(void);
 void app_printer_cancel(void);
 /* After sending stops, release Bluetooth from the owning worker before reboot. */
 esp_err_t app_printer_stop(void);
-/* Synchronous, bounded sending of one 320x320 MSB-first raster. */
-esp_err_t app_printer_send(const uint8_t *bitmap);
+/* One MSB-first raster, byte-aligned width <= 384. Source has width*height/8 bytes. */
+esp_err_t app_printer_send(const uint8_t *bitmap, unsigned width, unsigned height);
 #ifdef __cplusplus
 }
 #endif
