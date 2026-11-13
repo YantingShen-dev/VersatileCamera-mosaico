@@ -2,7 +2,7 @@
   "application": "photo_print_mosaico",
   "version": "1.2.0",
   "date": "2026-11-13",
-  "status": "candidate: LCD DMA queue and camera memory fix; hardware acceptance pending",
+  "status": "validated on hardware and saved/reopened from Idea library",
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
   "firmware_elf_sha256": "f3a353b2a3f6efef95dcd37956a2534173b0e125dcbfa28abbf3b410435f86a3",
   "bundle": "photo_print_mosaico-1.2.0.irisfw",
@@ -60,15 +60,17 @@
     "state_machine_unit": "passed: voice live-only, five beeps/seconds, repeated commands, cancel, filters/manual capture/print",
     "native_simulator": "passed: all filters, double click, countdown, repeat suppression, retake, offline and printing failure",
     "startup": "passed: repaired ELF confirmed live, crash_count=0; camera, voice and speaker initialized",
-    "physical_voice": "pending",
-    "physical_sound": "pending after 16kHz duplex conversion",
+    "physical_voice": "passed: user confirmed phrase starts countdown and capture; log command_id=1 probability=0.972 followed by capture after 5 seconds",
+    "physical_sound": "passed: user confirmed five beeps and shutter after 16kHz duplex conversion",
     "physical_print": "384-dot alignment and continuous feeding verified on prior version; printer code unchanged",
-    "display": "passed: no SPI allocation/display-render errors since repaired boot; user confirmed live view, capture and retake"
+    "display": "passed: no SPI allocation/display-render errors since repaired boot; user confirmed live view, capture and retake",
+    "idea_reopen": "passed: saved Idea 1.2.0 d7fab0 reopened; exact ELF, new Boot ID, crash_count=0, camera screenshot and microphone activity verified"
   },
   "idea": {
-    "saved": false,
+    "saved": true,
     "previous_local_id_display": "d1331f",
-    "local_id_display": null
+    "local_id_display": "d7fab0",
+    "reopened_boot_id": "9743410688211857530"
   },
   "previous_installation": {
     "stale": false,
