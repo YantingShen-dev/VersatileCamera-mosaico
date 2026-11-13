@@ -6,6 +6,14 @@ not UI behavior.
 The public dependency is ESP-GSP; BSP, display-present, LCD and logging are private
 implementation dependencies. There is no dependency on `app_hello` or `main`.
 
+`panel_memory.c` wraps the public LCD SPI constructor at link time for the BSP
+LCD host only. It limits the transaction queue to two of the BSP's 8-line chunks
+(about 15 KiB internal DMA memory instead of 77 KiB). The original constructor
+owns allocation, callbacks and lifetime; other buses pass through unchanged.
+Direct PSRAM DMA remains disabled as in the pinned BSP. This bound is required
+when camera, offline speech and Classic Bluetooth run together. Verify actual
+panel refresh and absence of SPI allocation errors, not just application boot.
+
 ```c
 esp_gsp_esp_lcd_config_t display;
 esp_err_t err = app_display_init(&display);

@@ -2,12 +2,12 @@
   "application": "photo_print_mosaico",
   "version": "1.2.0",
   "date": "2026-11-13",
-  "status": "candidate: offline voice trigger replacing hand gestures; hardware acceptance pending",
+  "status": "candidate: LCD DMA queue and camera memory fix; hardware acceptance pending",
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
-  "firmware_elf_sha256": "d368d7b28db73b447fff63af71af7a2c226f92cfc27d393c0818301762c1f3d7",
+  "firmware_elf_sha256": "f3a353b2a3f6efef95dcd37956a2534173b0e125dcbfa28abbf3b410435f86a3",
   "bundle": "photo_print_mosaico-1.2.0.irisfw",
-  "bundle_bytes": 3789985,
-  "bundle_sha256": "2544dc024c91f447862b3872c369ac3adc93a6db1df0c187e8c8a59d323b3933",
+  "bundle_bytes": 3790171,
+  "bundle_sha256": "22257ac3fa04527ada26445bd064674dd53e756c5a9da2ace980cd5e639c9cd8",
   "manifest": {
     "components": [
       {
@@ -22,8 +22,8 @@
         "file": "ota_0.bin",
         "id": 2,
         "kind": "application",
-        "sha256": "7715b6cc52b35ddbd93a286f3206fa0acbc950b904fbcb1aca9a3b1fc28ae85a",
-        "size": 5416864,
+        "sha256": "e66e733b4027a61ba4fe52746e341d7fbc07fcb7180418a6d43e6382880b3dfb",
+        "size": 5417104,
         "target_offset": 2162688
       },
       {
@@ -59,22 +59,38 @@
   "validation": {
     "state_machine_unit": "passed: voice live-only, five beeps/seconds, repeated commands, cancel, filters/manual capture/print",
     "native_simulator": "passed: all filters, double click, countdown, repeat suppression, retake, offline and printing failure",
-    "startup": "passed: live 1.2.0 identity and ELF hash; crash_count=0; microphone samples and mn7_cn initialized",
+    "startup": "passed: repaired ELF confirmed live, crash_count=0; camera, voice and speaker initialized",
     "physical_voice": "pending",
     "physical_sound": "pending after 16kHz duplex conversion",
-    "physical_print": "384-dot alignment and continuous feeding verified on prior version; printer code unchanged"
+    "physical_print": "384-dot alignment and continuous feeding verified on prior version; printer code unchanged",
+    "display": "passed: no SPI allocation/display-render errors since repaired boot; user confirmed live view, capture and retake"
   },
   "idea": {
     "saved": false,
     "previous_local_id_display": "d1331f",
     "local_id_display": null
   },
-  "installation": {
+  "previous_installation": {
     "stale": false,
     "crash_count": 0,
     "boot_id": "1968054852316243731",
     "operation_id": "a36b04b4-fb62-45f8-bdd2-ca58fbc69e1f",
     "firmware_sha256": "d368d7b28db73b447fff63af71af7a2c226f92cfc27d393c0818301762c1f3d7",
     "result": "succeeded"
+  },
+  "installation": {
+    "operation_id": "24a79457-a866-4f82-89d9-f7d5bb955ff5",
+    "result": "succeeded",
+    "boot_id": "15432647524807097276",
+    "firmware_sha256": "f3a353b2a3f6efef95dcd37956a2534173b0e125dcbfa28abbf3b410435f86a3",
+    "crash_count": 0,
+    "stale": false
+  },
+  "memory_fix": {
+    "lcd_dma_queue_chunks": 2,
+    "camera_v4l2_buffers": 1,
+    "preview_buffers": 2,
+    "free_internal": 59619,
+    "free_spiram": 2503592
   }
 }

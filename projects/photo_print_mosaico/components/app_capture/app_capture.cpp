@@ -41,7 +41,7 @@ struct app_capture {
     mosaico_camera_handle_t camera = nullptr;
     ppa_client_handle_t ppa = nullptr;
     uint8_t *bgr = nullptr, *bitmap = nullptr;
-    Preview previews[3];
+    Preview previews[2];
     ppa_srm_oper_config_t conversion = {};
     std::atomic<bool> stop{false}, stopped{false};
     std::atomic<int64_t> poweroff_at{0};
@@ -93,13 +93,20 @@ struct app_capture {
     }
     esp_err_t open_camera() {
         mosaico_camera_config_t config = MOSAICO_CAMERA_DEFAULT_CONFIG();
-        config.buffer_count = 2;
+        // PPA finishes before returning the frame. One V4L2 buffer is enough;
+        // the UI owns separate buffers and cannot retain this camera frame.
+        config.buffer_count = 1;
         esp_err_t err = mosaico_camera_new(&config, &camera);
         if (err == ESP_OK) {
             err = mosaico_camera_open(camera);
         }
         if (err == ESP_OK) {
             err = mosaico_camera_start_stream(camera);
+            if (err == ESP_OK)
+                ESP_LOGI(TAG, "Camera ready: internal=%u largest=%u PSRAM=%u",
+                         (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                         (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                         (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
         }
         if (err != ESP_OK && camera) {
             mosaico_camera_del(camera);

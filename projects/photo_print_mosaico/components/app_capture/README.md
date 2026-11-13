@@ -7,6 +7,9 @@ and the official camera/BSP/Iris components. No hand model or image-probe RPC.
 Startup reserves Classic Bluetooth and duplex 16kHz audio/keys first. Ordinary
 malloc/new then prefers PSRAM before speech model initialization and camera
 buffers; explicit internal/DMA allocations retain their capability requirements.
+One V4L2 camera buffer is returned immediately after blocking PPA conversion;
+two separate preview buffers are released by GSP before reuse. This saves one
+full sensor frame plus one 384x384 RGB565 preview without changing print pixels.
 
 UI/key/voice callbacks enqueue timestamped events. The worker is the sole owner
 of the controller and camera. Queue length 8 preserves button double clicks;
@@ -14,7 +17,8 @@ voice is accepted only in live mode and starts a five-second countdown. Speech
 listening is disabled in filter/countdown/capture/preview/printing/error modes.
 Commands queued while printing are discarded after transfer.
 
-PPA crops a central 768 square, rotates and scales to 384x384 BGR888. Filters write
+PPA crops a central 768 square when the sensor frame permits, otherwise a 384
+square, rotates and scales to 384x384 BGR888. Filters write
 another bitmap; camera buffers and photos stay in memory. Shutdown stops camera,
 voice, audio/keys and Bluetooth, with an eight-second shutdown-handler bound.
 
