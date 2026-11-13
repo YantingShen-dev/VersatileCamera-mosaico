@@ -6,7 +6,7 @@ from fontTools import subset
 from PIL import Image
 root=Path(__file__).resolve().parents[1]
 ui=root/'components/app_photo/ui'
-texts='CCD SNAP PHOTO CHECK FILTER READY BT -- 1:1 384px 0123456789 /%?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz正常黑白反色波点阈值版画拍照打印滤镜上一项下一项双击确认返回取景手掌五秒倒计时已识别取消立即拍照检查照片确认后出纸重拍正在发送请保持打印机开机已发送请检查出纸失败再试摄像头不可用检查左侧模块启动连接中未连接已连接手势准备中可用音效扩展板正在处理'
+texts='CCD SNAP PHOTO CHECK FILTER READY BT -- 1:1 384px 0123456789 /%?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz正常黑白反色波点阈值版画拍照打印滤镜上一项下一项双击确认返回取景语音准备拍照五秒倒计时已识别取消立即拍照检查照片确认后出纸重拍正在发送请保持打印机开机已发送请检查出纸失败再试摄像头不可用检查左侧模块启动连接中未连接已连接语音准备中可用音效扩展板正在处理'
 texts += ''.join(p.read_text(encoding='utf-8') for p in (root/'components/app_photo').glob('*.c'))
 charset=''.join(sorted(set(texts)))
 font=Path(os.environ['PHOTO_FONT_SOURCE'])

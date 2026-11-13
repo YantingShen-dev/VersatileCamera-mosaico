@@ -21,7 +21,7 @@ static struct {
     uint16_t *mono;
     unsigned prints, beeps, shutters;
     uint64_t sent_at;
-    bool fail, rendered;
+    bool fail, rendered, voice_latched;
     photo_filter_t rendered_filter;
 } backend;
 static void release(void *ctx) { (void)ctx; }
@@ -36,7 +36,7 @@ static bool poll(void *ctx, photo_state_t *out) {
     (void)ctx;
     uint64_t now = now_ms();
     const char *path = getenv("PHOTO_SIM_STATE");
-    bool palm = false;
+    bool voice = false;
     if (path) {
         FILE *file = fopen(path, "r");
         if (file) {
@@ -45,10 +45,12 @@ static bool poll(void *ctx, photo_state_t *out) {
             fclose(file);
             backend.control.state.connected = strstr(text, "offline") == NULL;
             backend.fail = strstr(text, "fail") != NULL;
-            palm = strstr(text, "palm") != NULL;
+            voice = strstr(text, "voice") != NULL;
         }
     }
-    photo_control_palm(&backend.control, palm, now);
+    if (voice && !backend.voice_latched)
+        photo_control_voice(&backend.control, now);
+    backend.voice_latched = voice;
     photo_control_tick(&backend.control, now);
     unsigned a = photo_control_take_actions(&backend.control);
     if (a & PHOTO_DO_BEEP)
@@ -90,7 +92,7 @@ esp_gsp_err_t gsp_bridge_app_init(esp_gsp_handle_t ui) {
     photo_control_init(&backend.control);
     backend.control.state.mode = PHOTO_LIVE;
     backend.control.state.connected = true;
-    backend.control.state.gesture_ready = true;
+    backend.control.state.voice_ready = true;
     backend.control.state.audio_ready = true;
     backend.bgr = calloc(PHOTO_SIDE * PHOTO_SIDE, 3);
     backend.bits = calloc(PHOTO_BYTES, 1);

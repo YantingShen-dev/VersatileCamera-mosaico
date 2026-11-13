@@ -15,6 +15,4 @@ dependencies:
     override_path: "../../../submodule/esp-mosaico-bsp/components/mosaico_module_camera"
   mosaico_module_interact:
     override_path: "../../../submodule/esp-mosaico-bsp/components/mosaico_module_interact"
-  espressif/hand_gesture_recognition: "==0.2.1"
-  espressif/hand_detect: "==0.2.1"
-  espressif/esp-dl: "==3.3.14"
+  espressif/esp-sr: "==2.4.7"

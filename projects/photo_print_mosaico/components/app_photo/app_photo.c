@@ -20,7 +20,7 @@ static void paint(struct app_photo *a) {
     const char *status = "启动摄像头", *one = "1 拍照", *two = "2 滤镜", *title = "CCD SNAP";
     switch (s->mode) {
     case PHOTO_LIVE:
-        status = s->gesture_ready ? "取景 / 张开手掌启动五秒倒计时" : "取景 / 手势准备中";
+        status = s->voice_ready ? "取景 / 说“准备拍照”" : "取景 / 语音准备中，可按键拍照";
         break;
     case PHOTO_FILTER:
         status = "滤镜 / 实时预览";
@@ -29,7 +29,7 @@ static void paint(struct app_photo *a) {
         title = "FILTER";
         break;
     case PHOTO_COUNTDOWN:
-        status = "手掌已识别 / 倒计时";
+        status = "准备拍照 / 五秒倒计时";
         one = "1 立即拍照";
         two = "2 取消";
         break;

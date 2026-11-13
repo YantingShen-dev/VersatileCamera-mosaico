@@ -26,26 +26,26 @@ typedef enum {
     PHOTO_COUNTDOWN,
     PHOTO_CAPTURING
 } photo_mode_t;
-typedef enum { PHOTO_BUTTON1, PHOTO_BUTTON2 } photo_command_t;
+typedef enum { PHOTO_BUTTON1, PHOTO_BUTTON2, PHOTO_VOICE } photo_command_t;
 typedef struct {
     photo_mode_t mode;
     photo_filter_t filter;
-    bool connected, board_connected, gesture_ready, audio_ready;
+    bool connected, board_connected, voice_ready, audio_ready;
     uint32_t response;
     unsigned countdown, photos;
 } photo_state_t;
 enum { PHOTO_DO_CAPTURE = 1, PHOTO_DO_PRINT = 2, PHOTO_DO_BEEP = 4 };
 typedef struct {
     photo_state_t state;
-    uint64_t countdown_end, second_click_at, palm_since, palm_last_seen, absent_since;
-    bool second_click_pending, palm_tracking, absent_tracking, gesture_armed;
-    unsigned actions, palm_samples;
+    uint64_t countdown_end, second_click_at;
+    bool second_click_pending;
+    unsigned actions;
 } photo_control_t;
 /* Single owner; all timestamps are monotonic milliseconds. */
 void photo_control_init(photo_control_t *c);
 void photo_control_button(photo_control_t *c, photo_command_t button, uint64_t now);
 void photo_control_tick(photo_control_t *c, uint64_t now);
-void photo_control_palm(photo_control_t *c, bool open_palm, uint64_t now);
+void photo_control_voice(photo_control_t *c, uint64_t now);
 unsigned photo_control_take_actions(photo_control_t *c);
 void photo_control_captured(photo_control_t *c, bool success);
 void photo_control_printed(photo_control_t *c, bool success);

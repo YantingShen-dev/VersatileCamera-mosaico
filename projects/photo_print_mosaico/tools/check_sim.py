@@ -111,17 +111,17 @@ async def main():
         await tap(110,457);await asyncio.sleep(1.9);expect(5,2)
         await capture("ccd-failed-photo-kept")
         await tap(350,457);expect(1,2)
-        STATE.write_text("online palm",encoding="ascii")
-        await asyncio.sleep(1.0);v=expect(8,2);base_beeps=v[6]-1
+        STATE.write_text("online voice",encoding="ascii")
+        await asyncio.sleep(0.2);v=expect(8,2);base_beeps=v[6]-1
         await capture("ccd-countdown")
-        await asyncio.sleep(4.9);v=expect(2,2);assert v[6]-base_beeps==5,v
+        await asyncio.sleep(5.2);v=expect(2,2);assert v[6]-base_beeps==5,v
         await tap(350,457);await asyncio.sleep(1.2);expect(1,2)
         STATE.write_text("online",encoding="ascii");await asyncio.sleep(1.0)
-        STATE.write_text("online palm",encoding="ascii");await asyncio.sleep(1.0);expect(8,2)
+        STATE.write_text("online voice",encoding="ascii");await asyncio.sleep(1.0);expect(8,2)
         await tap(350,457);await asyncio.sleep(1.0);expect(1,2)
         STATE.write_text("online",encoding="ascii")
         await capture("ccd-ready")
-        print("PASS: all filters, double click preserves selection, preview/print/retry, palm countdown/rearm/cancel",flush=True)
+        print("PASS: all filters, double click preserves selection, preview/print/retry, voice countdown/repeat suppression/cancel",flush=True)
         reader.cancel()
 
 

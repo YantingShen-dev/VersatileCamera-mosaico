@@ -1,8 +1,8 @@
 # CCD 拍照打印 Idea
 
-`photo_print_mosaico` 1.1.0：Mosaico 左侧摄像头、右侧 Interaction 双按钮板，直接通过 Classic Bluetooth SPP 连接 RPP02N / T3-GZP 热敏打印机。开机即取景，拍后先预览，确认才打印，不需要手机 App 或电脑中转。照片只存在内存里。
+`photo_print_mosaico` 1.2.0：Mosaico 左侧摄像头、右侧 Interaction 双按钮板，直接通过 Classic Bluetooth SPP 连接 RPP02N / T3-GZP 热敏打印机。开机即取景，拍后先预览，确认才打印，不需要手机 App 或电脑中转。照片只存在内存里。
 
-设备 Idea 库中的 `d1331f` 是上一版（不是社区下载码）。当前候选修复采用检测模型自带门槛，并容忍短暂漏检；实机五指倒计时仍在验收，尚未另存到 Idea 库。机械按键、快门声和 384 点居中连续打印已验证。完整安装包及确切验证状态见 `firmware/candidate-1.1.0.json`。
+1.2.0 改用离线语音口令“准备拍照”，已移除手势模型、手势触发和临时图片测试入口。取景时说出口令，进入五秒倒计时；机械按钮和拍后确认打印流程保留。当前版本正在进行实机语音验收，尚未另存 Idea。完整固件与验证状态见 `firmware/candidate-1.2.0.json`。旧 Idea `d1331f` 是 1.1.0 手势版。
 
 ## 操作
 
@@ -16,7 +16,7 @@
 
 屏幕底部两个触摸按钮与实体按键含义一致。右侧模块旋转安装时，上方键对应模块 `right_pressed`，下方键对应 `left_pressed`；使用 GPIO 模式读取用户板上的两个机械按键。按键防抖 40ms，按住不会重复触发。
 
-五指张开的手掌须至少三次识别成功、跨度不少于 700ms，允许中间短暂漏检（距上次成功不超过 500ms），才启动 5 秒倒计时，依次显示 5/4/3/2/1 并请求五次短提示音，然后发出机械快门音、拍照。持续举手不会重复触发；手掌离开至少 800ms 后重新允许触发。滤镜选择、预览和打印中不启动手势拍照。模型读取滤镜前的彩色图像，黑白预览不改变识别输入。
+只在取景画面监听“准备拍照”，无需额外唤醒词。识别后显示 5/4/3/2/1、播放五声短提示音，最后发出机械快门音并拍照。倒计时中重复说话不会延长计时；滤镜、预览、打印时忽略语音。照片需要按上键确认才会打印，下键可重拍。识别在本机完成，不存储或上传语音。
 
 ## 滤镜与纸面
 
@@ -37,15 +37,15 @@
 | 目录 | 职责 |
 | --- | --- |
 | components/app_photo | 共享 CCD UI、状态机、五种点阵滤镜 |
-| components/app_capture | 摄像头/PPA、冻结照片、离线手势识别、工作队列 |
+| components/app_capture | 摄像头/PPA、冻结照片、语音命令协调、工作队列 |
+| components/app_voice | 板载麦克风、离线中文命令识别 |
 | components/app_controls | 右侧实体键、独立扬声器音效任务 |
 | components/app_printer | Classic SPP 配对、连接、整图传输 |
 | components/app_display | 官方显示与触摸适配 |
 | tools | 场景生成、模拟器交互测试、点阵与状态机测试 |
 
-手势模型固定使用 espressif/hand_detect 0.2.1、hand_gesture_recognition 0.2.1、esp-dl 3.3.14。先检测一只足够大的手，再识别 `five` 类别（置信度至少 0.80）；仅凭 PIR 动作传感器不会触发拍照。模型在设备本地执行，不上传摄像头图像。
+语音固定使用 `espressif/esp-sr` 2.4.7 的中文 MultiNet7，唯一口令为 `zhun bei pai zhao`（准备拍照），检测门槛 0.85。板载 ES8311 麦克风采集 16 kHz、16 位单声道，经过 AFE 的 VAD/AGC 后交给识别器。中文模型内嵌在应用中，不更改 Vibe 固件或分区布局。
 
-手部检测门槛为 0.35，最小框 45×45 像素；此前 0.65 会过滤掉实机记录中 0.62/0.38 的真实手掌。下次验证应先按“重拍”回到 `CCD SNAP` 实时取景，再让完整手掌入镜；`PHOTO CHECK` 预览或滤镜选择中暂停手势检测。
 
 ## 构建与安装
 
@@ -67,26 +67,23 @@ $env:PHOTO_SIM_STATE = 'D:/photo-sim-state.txt'
 python mosaico.py project sim --project projects/photo_print_mosaico --interactive
 ```
 
-浏览器打开输出的 localhost 地址。底部两键可操作真实共享 C 状态机。原生模拟器的相机、打印机、手势分类结果及扬声器为替身，不代表这些硬件已经验收。
+浏览器打开输出的 localhost 地址。底部两键可操作真实共享 C 状态机。原生模拟器的相机、打印机、语音命令结果及扬声器为替身，不代表这些硬件已经验收。
 
-若原生模拟器位于 `http://127.0.0.1:3222/`，可在另一终端启动手势/连接状态控制面板：
+若原生模拟器位于 `http://127.0.0.1:3222/`，可在另一终端启动语音/连接状态控制面板：
 
 ```powershell
 python projects/photo_print_mosaico/tools/sim_controls.py --state D:/photo-sim-state.txt
 ```
 
-打开 `http://127.0.0.1:3223/`；其中嵌入同一个原生模拟器，可模拟举手、移手、断线和发送失败。`--state` 必须与原生模拟器的 `PHOTO_SIM_STATE` 指向同一个文件。控制面板只监听本机，不会连接真实打印机。
+打开 `http://127.0.0.1:3223/`；其中嵌入同一个原生模拟器，可模拟口令、结束口令、断线和发送失败。`--state` 必须与原生模拟器的 `PHOTO_SIM_STATE` 指向同一个文件。控制面板只监听本机，不会连接真实打印机。
 
-使用相同 PHOTO_SIM_STATE 运行 `tools/check_sim.py` 可自动通过触摸事件测试五滤镜、双击确认、离线保护、发送去重、失败保留照片、五秒倒计时及移手重触发。开发依赖见 `tools/requirements-dev.txt`。手动将状态文件写成 `online palm` 可模拟已识别五指手掌，写成 `online` 模拟移开；`offline` 与 `fail` 分别模拟断线与打印失败。
+使用相同 PHOTO_SIM_STATE 运行 `tools/check_sim.py` 可自动通过触摸事件测试五滤镜、双击确认、离线保护、发送去重、失败保留照片、五秒倒计时及新口令触发。开发依赖见 `tools/requirements-dev.txt`。手动将状态文件写成 `online voice` 可模拟已识别语音口令，写成 `online` 模拟结束口令；`offline` 与 `fail` 分别模拟断线与打印失败。
 
-`tools/photo_control_test.c` 验证倒计时、五次提示音事件、取消、双击和去重；`tools/photo_bitmap_test.c` 验证灰度、反色、位序和预览/打印一致。模型真实识别、按键方向、声音和纸面宽度需要实物验证。
-
-`python tools/probe_image.py <本地图片> --python <运行 mosaico.py 的 Python> --device-id <设备 ID>`
-可用官方 RPC 将指定图片临时送入实机模型。图片等比缩放、白色补边至 384×384 灰度图，仅在内存中替换输入 10 秒，运行同一套手部检测、五指分类和倒计时；不会自动打印。测试结束恢复摄像头，若已拍照则按重拍回到取景。2026-11-13 用户提供的黑白网点手掌图片在这条路径上未检出手、未触发倒计时；这不是实时相机手势功能已验收的证据。
+`tools/photo_control_test.c` 验证倒计时、五次提示音事件、取消、双击和去重；`tools/photo_bitmap_test.c` 验证灰度、反色、位序和预览/打印一致。语音实际识别、按键方向、声音和纸面宽度需要实物验证。
 
 ## 已有版本
 
-1.0.0 已保存于这台设备的 Idea 库，本地标识 `ddfc02`（不是社区下载码），原版本实测打印无横纹、走纸连贯。源码提交 `a27420d` 已推送 `feat/photo-print-idea`。1.1.0 的当前完整安装包与验证记录见 `firmware/candidate-1.1.0.json`；待手势实物测试通过再提升为正式 `firmware/release.json`。`.irisfw` 安装包保留在本地，不纳入 Git。
+1.0.0 已保存于这台设备的 Idea 库，本地标识 `ddfc02`（不是社区下载码），原版本实测打印无横纹、走纸连贯。源码提交 `a27420d` 已推送 `feat/photo-print-idea`。1.1.0 手势候选版记录保留在 `firmware/candidate-1.1.0.json`；当前 1.2.0 语音版记录在 `firmware/candidate-1.2.0.json`，实机验收前不替换正式 `firmware/release.json`。`.irisfw` 安装包保留在本地，不纳入 Git。
 
 需要从电脑关机时，运行中的本应用支持以下维护命令。它会停止外设、发出官方 BSP 关机信号；USB 保持供电时进入熄屏深睡眠。
 

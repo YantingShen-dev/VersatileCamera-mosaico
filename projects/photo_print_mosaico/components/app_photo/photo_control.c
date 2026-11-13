@@ -1,17 +1,13 @@
 #include "photo_control.h"
 #include <string.h>
-enum { PALM_HOLD_MS = 700, PALM_MISS_GRACE_MS = 500, PALM_MIN_SAMPLES = 3 };
 static void capture(photo_control_t *c) {
     c->state.mode = PHOTO_CAPTURING;
     c->state.countdown = 0;
     c->actions |= PHOTO_DO_CAPTURE;
-    c->palm_tracking = false;
-    c->gesture_armed = false;
 }
 void photo_control_init(photo_control_t *c) {
     memset(c, 0, sizeof(*c));
     c->state.mode = PHOTO_LOADING;
-    c->gesture_armed = true;
 }
 const char *photo_filter_name(photo_filter_t f) {
     static const char *names[] = {"正常黑白", "黑白反色", "黑白波点", "阈值版画", "ASCII"};
@@ -26,7 +22,6 @@ void photo_control_button(photo_control_t *c, photo_command_t b, uint64_t now) {
         else {
             c->state.mode = PHOTO_FILTER;
             c->second_click_pending = false;
-            c->palm_tracking = false;
         }
         break;
     case PHOTO_FILTER:
@@ -52,6 +47,7 @@ void photo_control_button(photo_control_t *c, photo_command_t b, uint64_t now) {
         else {
             c->state.mode = PHOTO_LIVE;
             c->state.countdown = 0;
+            c->actions &= ~PHOTO_DO_BEEP;
         }
         break;
     case PHOTO_REVIEW:
@@ -59,7 +55,6 @@ void photo_control_button(photo_control_t *c, photo_command_t b, uint64_t now) {
     case PHOTO_FAILED:
         if (b == PHOTO_BUTTON2) {
             c->state.mode = PHOTO_LIVE;
-            c->palm_tracking = false;
         } else if (c->state.connected) {
             c->state.mode = PHOTO_SENDING;
             c->actions |= PHOTO_DO_PRINT;
@@ -87,40 +82,13 @@ void photo_control_tick(photo_control_t *c, uint64_t now) {
         }
     }
 }
-void photo_control_palm(photo_control_t *c, bool open, uint64_t now) {
-    if (!open) {
-        /* One missed inference must not erase an otherwise stable hand hold. */
-        if (c->palm_tracking && now - c->palm_last_seen > PALM_MISS_GRACE_MS)
-            c->palm_tracking = false;
-        if (!c->absent_tracking) {
-            c->absent_tracking = true;
-            c->absent_since = now;
-        }
-        if (now - c->absent_since >= 800)
-            c->gesture_armed = true;
+void photo_control_voice(photo_control_t *c, uint64_t now) {
+    if (c->state.mode != PHOTO_LIVE || !c->state.voice_ready)
         return;
-    }
-    c->absent_tracking = false;
-    if (c->state.mode != PHOTO_LIVE || !c->gesture_armed) {
-        c->palm_tracking = false;
-        return;
-    }
-    if (!c->palm_tracking || now - c->palm_last_seen > PALM_MISS_GRACE_MS) {
-        c->palm_tracking = true;
-        c->palm_since = now;
-        c->palm_samples = 0;
-    }
-    c->palm_last_seen = now;
-    if (c->palm_samples < PALM_MIN_SAMPLES)
-        ++c->palm_samples;
-    if (now - c->palm_since >= PALM_HOLD_MS && c->palm_samples >= PALM_MIN_SAMPLES) {
-        c->gesture_armed = false;
-        c->palm_tracking = false;
-        c->state.mode = PHOTO_COUNTDOWN;
-        c->state.countdown = 5;
-        c->countdown_end = now + 5000;
-        c->actions |= PHOTO_DO_BEEP;
-    }
+    c->state.mode = PHOTO_COUNTDOWN;
+    c->state.countdown = 5;
+    c->countdown_end = now + 5000;
+    c->actions |= PHOTO_DO_BEEP;
 }
 unsigned photo_control_take_actions(photo_control_t *c) {
     unsigned a = c->actions;

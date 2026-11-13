@@ -15,7 +15,7 @@ struct app_controls {
     QueueHandle_t sounds = nullptr;
     std::atomic<bool> stop{false}, board_done{true}, sound_done{true}, board_ready{false},
         audio_ready{false};
-    int16_t pcm[240] = {}; // 10 ms mono blocks owned only by the audio task.
+    int16_t pcm[160] = {}; // 10 ms mono blocks owned only by the audio task.
     void buttons() {
         mosaico_interact_handle_t board = nullptr;
         bool raw[2] = {}, stable[2] = {};
@@ -87,17 +87,17 @@ struct app_controls {
     }
     void audio() {
         i2s_std_config_t i2s = {};
-        i2s.clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(24000);
+        i2s.clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000);
         i2s.clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_256;
         i2s.slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO);
         i2s.gpio_cfg.mclk = BSP_AUDIO_I2S_MCLK;
         i2s.gpio_cfg.bclk = BSP_AUDIO_I2S_SCLK;
         i2s.gpio_cfg.ws = BSP_AUDIO_I2S_LRCLK;
         i2s.gpio_cfg.dout = BSP_AUDIO_I2S_SDOUT;
-        i2s.gpio_cfg.din = GPIO_NUM_NC; // This app only plays sound; it never records.
+        i2s.gpio_cfg.din = BSP_AUDIO_I2S_DSIN; // Shared duplex path: voice input and shutter output.
         auto speaker = bsp_audio_init(&i2s) == ESP_OK ? bsp_audio_codec_speaker_init() : nullptr;
         esp_codec_dev_sample_info_t format = {};
-        format.sample_rate = 24000;
+        format.sample_rate = 16000;
         format.bits_per_sample = 16;
         format.channel = 1;
         bool opened = speaker && esp_codec_dev_open(speaker, &format) == ESP_CODEC_DEV_OK;
@@ -112,9 +112,9 @@ struct app_controls {
             if (!audio_ready.load())
                 continue;
             ESP_LOGI("photo_sound", "Playing %s", shutter ? "shutter" : "countdown beep");
-            unsigned length = shutter ? 3600 : 2040;
-            for (unsigned start = 0; start < length && !stop.load(); start += 240) {
-                for (unsigned i = 0; i < 240; i++) {
+            unsigned length = shutter ? 2400 : 1360;
+            for (unsigned start = 0; start < length && !stop.load(); start += 160) {
+                for (unsigned i = 0; i < 160; i++) {
                     unsigned n = start + i;
                     float sample = 0;
                     if (n < length) {
@@ -122,12 +122,12 @@ struct app_controls {
                             noise ^= noise << 13;
                             noise ^= noise >> 17;
                             noise ^= noise << 5;
-                            unsigned local = n < 1080 ? n : n - 1080;
-                            float envelope = expf(-(float)local / (n < 1080 ? 150.0f : 325.0f));
+                            unsigned local = n < 720 ? n : n - 720;
+                            float envelope = expf(-(float)local / (n < 720 ? 100.0f : 216.7f));
                             sample = ((int)(noise & 65535) - 32768) * 0.32f * envelope;
                         } else {
-                            float envelope = fminf(1.0f, fminf(n / 240.0f, (length - n) / 240.0f));
-                            sample = 6000 * sinf(6.2831853f * 1800 * n / 24000.0f) * envelope;
+                            float envelope = fminf(1.0f, fminf(n / 160.0f, (length - n) / 160.0f));
+                            sample = 6000 * sinf(6.2831853f * 1800 * n / 16000.0f) * envelope;
                         }
                     }
                     pcm[i] = (int16_t)sample;

@@ -1,0 +1,80 @@
+{
+  "application": "photo_print_mosaico",
+  "version": "1.2.0",
+  "date": "2026-11-13",
+  "status": "candidate: offline voice trigger replacing hand gestures; hardware acceptance pending",
+  "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
+  "firmware_elf_sha256": "d368d7b28db73b447fff63af71af7a2c226f92cfc27d393c0818301762c1f3d7",
+  "bundle": "photo_print_mosaico-1.2.0.irisfw",
+  "bundle_bytes": 3789985,
+  "bundle_sha256": "2544dc024c91f447862b3872c369ac3adc93a6db1df0c187e8c8a59d323b3933",
+  "manifest": {
+    "components": [
+      {
+        "file": "partition-table.bin",
+        "id": 1,
+        "kind": "partition_table",
+        "sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12",
+        "size": 4096,
+        "target_offset": 32768
+      },
+      {
+        "file": "ota_0.bin",
+        "id": 2,
+        "kind": "application",
+        "sha256": "7715b6cc52b35ddbd93a286f3206fa0acbc950b904fbcb1aca9a3b1fc28ae85a",
+        "size": 5416864,
+        "target_offset": 2162688
+      },
+      {
+        "file": "ui_apps.bin",
+        "id": 3,
+        "kind": "data",
+        "sha256": "75f6334388a75ee0cfd19a9e60e32375a8f3f4d878f96fc671f46baa6971dd4e",
+        "size": 265232,
+        "target_offset": 15728640
+      }
+    ],
+    "minimum_recovery_version": "0.2.0",
+    "release": "1.2.0",
+    "schema": "esp-iris-system-update/0.2",
+    "target": {
+      "chip_id": 32,
+      "flash_size": 16777216
+    },
+    "target_layout_sha256": "3c26b245870110b955f490e07fe047309b44b098c5adce18a449b1010bb2fd12"
+  },
+  "voice": {
+    "component": "espressif/esp-sr 2.4.7",
+    "model": "mn7_cn",
+    "command": "准备拍照",
+    "pinyin": "zhun bei pai zhao",
+    "sample_rate": 16000,
+    "channels": 1,
+    "bits": 16,
+    "threshold": 0.85,
+    "wake_word_required": false,
+    "model_storage": "application rodata; partition layout unchanged"
+  },
+  "validation": {
+    "state_machine_unit": "passed: voice live-only, five beeps/seconds, repeated commands, cancel, filters/manual capture/print",
+    "native_simulator": "passed: all filters, double click, countdown, repeat suppression, retake, offline and printing failure",
+    "startup": "passed: live 1.2.0 identity and ELF hash; crash_count=0; microphone samples and mn7_cn initialized",
+    "physical_voice": "pending",
+    "physical_sound": "pending after 16kHz duplex conversion",
+    "physical_print": "384-dot alignment and continuous feeding verified on prior version; printer code unchanged"
+  },
+  "idea": {
+    "saved": false,
+    "previous_local_id_display": "d1331f",
+    "local_id_display": null
+  },
+  "installation": {
+    "stale": false,
+    "crash_count": 0,
+    "boot_id": "1968054852316243731",
+    "operation_id": "a36b04b4-fb62-45f8-bdd2-ca58fbc69e1f",
+    "firmware_sha256": "d368d7b28db73b447fff63af71af7a2c226f92cfc27d393c0818301762c1f3d7",
+    "result": "succeeded"
+  }
+}

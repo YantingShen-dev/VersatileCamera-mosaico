@@ -7,10 +7,10 @@ from pathlib import Path
 HTML = r"""<!doctype html><meta charset="utf-8"><title>CCD 相机模拟器</title>
 <style>body{margin:0;background:#e7e7df;color:#222;font:16px system-ui}main{display:flex;gap:32px;max-width:1060px;margin:24px auto;align-items:flex-start}iframe{border:0;width:580px;height:780px;background:#fff;border-radius:16px}aside{width:300px;padding:24px;background:#f7f7f0;border-radius:16px}button{font:inherit;padding:12px;margin:5px 0;width:100%;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer}button:hover{background:#e1e3d9}p{line-height:1.7}small{color:#666}#state{white-space:pre-line}</style>
 <main><iframe src="http://127.0.0.1:3222/" title="Mosaico 原生模拟器"></iframe><aside>
-<h2>CCD 拍照打印</h2><p>直接操作左侧相机界面的两个按钮。下面可以模拟手掌和打印机状态。</p>
-<button onclick="setState('online palm')">模拟张开五指</button><button onclick="setState('online')">移开手掌 / 蓝牙连接</button>
+<h2>CCD 拍照打印</h2><p>直接操作左侧相机界面的两个按钮。下面可以模拟语音和打印机状态。</p>
+<button onclick="setState('online voice')">模拟说“准备拍照”</button><button onclick="setState('online')">结束语音 / 蓝牙连接</button>
 <button onclick="setState('offline')">模拟打印机断开</button><button onclick="setState('fail')">模拟打印发送失败</button>
-<p id="state">读取状态中…</p><small>这是原生 UI 的本地模拟器。手势输入和打印结果为模拟；这里不会真实打印。实物声音、识别率及走纸效果需在板子上验证。</small>
+<p id="state">读取状态中…</p><small>这是原生 UI 的本地模拟器。语音输入和打印结果为模拟；这里不会真实打印。实物声音、识别率及走纸效果需在板子上验证。</small>
 </aside></main><script>
 async function setState(value){await fetch('/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});}
 const modes=['启动','取景','照片预览','发送中','已发送','发送失败','摄像头错误','选择滤镜','倒计时','拍照中'];
@@ -40,7 +40,7 @@ def main():
                 size=int(self.headers.get('Content-Length','0'))
                 if not 0<size<128:raise ValueError()
                 value=json.loads(self.rfile.read(size))['value']
-                if value not in ('online','online palm','offline','fail'):raise ValueError()
+                if value not in ('online','online voice','offline','fail'):raise ValueError()
                 args.state.write_text(value,encoding='ascii')
             except (ValueError,KeyError,OSError):return self.send('{}',status=400)
             self.send('{"ok":true}')

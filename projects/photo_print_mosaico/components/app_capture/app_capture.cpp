@@ -1,7 +1,7 @@
 #include "app_capture.h"
 #include "app_controls.h"
 #include "app_printer.h"
-#include "photo_probe.hpp"
+#include "app_voice.h"
 #include "bsp/power.h"
 #include "driver/ppa.h"
 #include "esp_cache.h"
@@ -13,8 +13,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include "hand_detect.hpp"
-#include "hand_gesture_recognition.hpp"
 #include "mosaico_module_camera.h"
 #include <algorithm>
 #include <atomic>
@@ -37,13 +35,9 @@ struct app_capture {
     TaskHandle_t task = nullptr;
     app_photo_handle_t ui = nullptr;
     photo_control_t control = {};
-    PhotoProbe probe;
     photo_state_t &state = control.state;
     app_controls_handle_t controls = nullptr;
-    HandDetect *detector = nullptr;
-    HandGestureCls *gesture = nullptr;
-    uint64_t last_gesture = 0;
-    uint64_t last_gesture_report = 0;
+    app_voice_handle_t voice = nullptr;
     mosaico_camera_handle_t camera = nullptr;
     ppa_client_handle_t ppa = nullptr;
     uint8_t *bgr = nullptr, *bitmap = nullptr;
@@ -71,6 +65,7 @@ struct app_capture {
         state.connected = app_printer_ready();
         state.board_connected = app_controls_board_ready(controls);
         state.audio_ready = app_controls_audio_ready(controls);
+        state.voice_ready = app_voice_ready(voice);
         xQueueOverwrite(snapshots, &state);
     }
     static void shutdown() {
@@ -187,54 +182,6 @@ struct app_capture {
         if (app_photo_present(ui, target->pixels, released, target) != ESP_GSP_OK)
             target->free.store(true);
     }
-    void recognize(uint64_t now) {
-        if (!detector || !gesture || now - last_gesture < 200)
-            return;
-        last_gesture = now;
-        dl::image::img_t image = {};
-        image.data = bgr;
-        image.width = PHOTO_SIDE;
-        image.height = PHOTO_SIDE;
-        image.pix_type = dl::image::DL_IMAGE_PIX_TYPE_BGR888;
-        auto &hands = detector->run(image);
-        bool palm = false;
-        const char *category = "none";
-        float score = 0;
-        if (hands.size() == 1) {
-            const auto &hand = hands.front();
-            // HandDetect already filters at its model's default 0.25 threshold.
-            // Real hands also score 0.27: classify them instead of discarding them
-            // with a second gate. The five-class score and temporal hold validate intent.
-            if (hand.box[2] - hand.box[0] >= 45 &&
-                hand.box[3] - hand.box[1] >= 45) {
-                std::vector<int> crop = {hand.box[0], hand.box[1], hand.box[2], hand.box[3]};
-                auto results = gesture->run_crop(image, crop);
-                if (!results.empty()) {
-                    const auto &r = results.front();
-                    category = r.cat_name ? r.cat_name : "?";
-                    score = r.score;
-                    palm = r.cat_name && strcmp(r.cat_name, "five") == 0 && r.score >= 0.80f;
-                    ESP_LOGD(TAG, "Gesture %s %.2f", r.cat_name ? r.cat_name : "?", r.score);
-                }
-            }
-        }
-        uint64_t finished = esp_timer_get_time() / 1000;
-        if (!hands.empty() || finished - last_gesture_report >= 2000) {
-            last_gesture_report = finished;
-            ESP_LOGI(TAG, "Vision hands=%u gesture=%s score=%.2f palm=%d elapsed=%llu ms",
-                     (unsigned)hands.size(), category, score, palm,
-                     (unsigned long long)(finished - now));
-            if (!hands.empty()) {
-                const auto &h = hands.front();
-                ESP_LOGI(TAG, "Hand score=%.2f box=%d,%d,%d,%d", h.score,
-                         h.box[0], h.box[1], h.box[2], h.box[3]);
-            }
-        }
-        const auto previous_mode = state.mode;
-        photo_control_palm(&control, palm, esp_timer_get_time() / 1000);
-        if (previous_mode == PHOTO_LIVE && state.mode == PHOTO_COUNTDOWN)
-            ESP_LOGI(TAG, "Palm confirmed: starting 5-second countdown");
-    }
     void run() {
         photo_control_init(&control);
         // The Classic controller needs contiguous internal RAM during startup.
@@ -251,22 +198,24 @@ struct app_capture {
             },
             this, &controls);
         ESP_LOGI(TAG, "Controls init: %s", esp_err_to_name(ctl));
-        // Reserve smaller mono audio DMA buffers before loading the two models.
+        // Reserve smaller mono audio DMA buffers before loading the speech model.
         for (unsigned i = 0; i < 200 &&
                              (!app_controls_audio_ready(controls) ||
                               !app_controls_board_ready(controls)); ++i)
             vTaskDelay(pdMS_TO_TICKS(10));
-        // ESP-DL temporarily creates many small graph objects while loading.
+        // Speech recognition allocates its working memory during startup.
         // Prefer PSRAM for ordinary malloc/new so those objects cannot exhaust
         // the internal-only FreeRTOS/driver heap. Explicit DMA allocations retain
         // their capability requirements; keep this policy for runtime inference.
         heap_caps_malloc_extmem_enable(0);
-        detector = new (std::nothrow) HandDetect(HandDetect::ESPDET_PICO_224_224_HAND, false);
-        gesture = new (std::nothrow) HandGestureCls(HandGestureCls::MOBILENETV2_0_5_S8_V1, false);
-        state.gesture_ready = detector && gesture;
-        ESP_LOGI(TAG, "Models ready; internal=%u largest=%u",
-                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
-                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+        esp_err_t sr = app_voice_start(
+            [](void *ctx, uint64_t stamp) {
+                auto *self = static_cast<app_capture *>(ctx);
+                ButtonEvent event = {PHOTO_VOICE, stamp};
+                xQueueSend(self->commands, &event, 0);
+            }, this, &voice);
+        ESP_LOGI(TAG, "Voice init: %s; internal=%u", esp_err_to_name(sr),
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
         bool ready = setup();
         bool capture_pending = false;
         while (!stop.load()) {
@@ -277,21 +226,15 @@ struct app_capture {
             }
             app_printer_poll();
             state.connected = app_printer_ready();
-            uint64_t now = esp_timer_get_time() / 1000;
-            probe.expire(now);
-            if (probe.begin(now)) {
-                // Start a fresh live hold; test data never requests printing.
-                state.mode = PHOTO_LIVE;
-                state.countdown = 0;
-                control.actions = 0;
-                control.palm_tracking = control.absent_tracking = false;
-                control.gesture_armed = true;
-                xQueueReset(commands);
-                ESP_LOGI(TAG, "Image probe started: 384x384 grayscale, 10 seconds");
-            }
             ButtonEvent event = {};
-            while (xQueueReceive(commands, &event, 0) == pdTRUE)
-                photo_control_button(&control, event.command, event.timestamp);
+            while (xQueueReceive(commands, &event, 0) == pdTRUE) {
+                if (event.command == PHOTO_VOICE) {
+                    photo_control_voice(&control, event.timestamp);
+                    if (state.mode == PHOTO_COUNTDOWN)
+                        ESP_LOGI(TAG, "Voice command: starting 5-second countdown");
+                } else photo_control_button(&control, event.command, event.timestamp);
+            }
+            app_voice_listen(voice, state.mode == PHOTO_LIVE);
             photo_control_tick(&control, esp_timer_get_time() / 1000);
             unsigned action = photo_control_take_actions(&control);
             if (action & PHOTO_DO_BEEP)
@@ -327,9 +270,8 @@ struct app_capture {
                 continue;
             }
             mosaico_camera_frame_t frame = {};
-            const bool probing = probe.fill(bgr);
-            esp_err_t e = probing ? ESP_OK : mosaico_camera_get_frame(camera, &frame);
-            if (e == ESP_OK && !probing) {
+            esp_err_t e = mosaico_camera_get_frame(camera, &frame);
+            if (e == ESP_OK) {
                 e = convert(frame);
                 esp_err_t r = mosaico_camera_return_frame(camera, &frame);
                 if (e == ESP_OK)
@@ -356,14 +298,13 @@ struct app_capture {
                          state.filter);
             } else {
                 photo_filter_apply(bgr, bitmap, state.filter);
-                if (state.mode == PHOTO_LIVE)
-                    recognize(now);
             }
             preview();
             publish();
             vTaskDelay(pdMS_TO_TICKS(20));
         }
         close_camera();
+        ESP_LOGI(TAG, "Voice stopped=%d", app_voice_stop(voice));
         app_controls_stop(controls);
         ESP_LOGI(TAG, "Bluetooth stop: %s", esp_err_to_name(app_printer_stop()));
         stopped.store(true);
@@ -420,17 +361,10 @@ extern "C" esp_err_t app_capture_start(app_capture_handle_t a, app_photo_handle_
         esp_unregister_shutdown_handler(app_capture::shutdown);
         return e;
     }
-    e = esp_iris_rpc_register(0x5048, 2, PhotoProbe::rpc, &a->probe);
-    if (e) {
-        esp_iris_rpc_unregister(0x5048, 1);
-        esp_unregister_shutdown_handler(app_capture::shutdown);
-        return e;
-    }
     if (xTaskCreate([](void *ctx) { static_cast<app_capture *>(ctx)->run(); }, "photo_capture",
                     16384, a, 4, &a->task) != pdPASS) {
         esp_unregister_shutdown_handler(app_capture::shutdown);
         esp_iris_rpc_unregister(0x5048, 1);
-        esp_iris_rpc_unregister(0x5048, 2);
         app_capture::shutdown_owner = nullptr;
         return ESP_ERR_NO_MEM;
     }
