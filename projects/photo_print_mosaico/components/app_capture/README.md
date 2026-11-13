@@ -13,6 +13,17 @@ shutdown signal. If USB keeps the board powered, BSP deep sleep is the fallback.
 Wake requires the board Power button/power cycle. This RPC is only available
 while this application is running; it never edits other Ideas.
 
+Developer image probe uses Iris RPC service `0x5048`, method `2`. It accepts one
+384x384 grayscale frame into PSRAM, then substitutes that input for ten seconds
+through the same detector, classifier, live controller and sound path. The worker
+starts a fresh live hold and frees the uploaded frame after ten seconds. A captured
+preview stays until retake; the probe never requests printing. There is no flash
+write. RPC opcodes: 0 begin, 1 append (uint32 LE offset + <=1000 raw bytes), 2 run,
+3 abort incomplete upload, 4 read state. States are 0 idle, 1 allocating, 2 uploading,
+3 queued, 4 running. `tools/probe_image.py` uses only official mosaico.py RPC calls.
+The uploader preserves aspect ratio with white padding and converts to grayscale;
+this diagnoses that supplied image, not the quality of live camera capture.
+
 Owns the camera, PPA, two hand models, reusable PSRAM buffers, frozen image, timed
 controller and one 16KiB worker. Depends on app_photo/app_printer/app_controls and
 Espressif camera, ESP-DL and hand model components.

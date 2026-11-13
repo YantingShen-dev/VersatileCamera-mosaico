@@ -81,6 +81,9 @@ python projects/photo_print_mosaico/tools/sim_controls.py --state D:/photo-sim-s
 
 `tools/photo_control_test.c` 验证倒计时、五次提示音事件、取消、双击和去重；`tools/photo_bitmap_test.c` 验证灰度、反色、位序和预览/打印一致。模型真实识别、按键方向、声音和纸面宽度需要实物验证。
 
+`python tools/probe_image.py <本地图片> --python <运行 mosaico.py 的 Python> --device-id <设备 ID>`
+可用官方 RPC 将指定图片临时送入实机模型。图片等比缩放、白色补边至 384×384 灰度图，仅在内存中替换输入 10 秒，运行同一套手部检测、五指分类和倒计时；不会自动打印。测试结束恢复摄像头，若已拍照则按重拍回到取景。2026-11-13 用户提供的黑白网点手掌图片在这条路径上未检出手、未触发倒计时；这不是实时相机手势功能已验收的证据。
+
 ## 已有版本
 
 1.0.0 已保存于这台设备的 Idea 库，本地标识 `ddfc02`（不是社区下载码），原版本实测打印无横纹、走纸连贯。源码提交 `a27420d` 已推送 `feat/photo-print-idea`。1.1.0 的当前完整安装包与验证记录见 `firmware/candidate-1.1.0.json`；待手势实物测试通过再提升为正式 `firmware/release.json`。`.irisfw` 安装包保留在本地，不纳入 Git。

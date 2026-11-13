@@ -4,10 +4,10 @@
   "date": "2026-11-13",
   "status": "candidate: mechanical keys, shutter sound and print verified; real palm countdown pending",
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
-  "firmware_elf_sha256": "42410b6fb8dd56d5c74489f0a5c9f95d18a331dc4453dd6ee8a1dc8380616f6a",
+  "firmware_elf_sha256": "9ce96cd952e59bbd4fa475d24ee1ea5faf781649974017508b915b5a5a288c43",
   "bundle": "photo_print_mosaico-1.1.0.irisfw",
-  "bundle_bytes": 2366249,
-  "bundle_sha256": "881ba8f749873e83929964c09b1a1b3ae7647f2e687835a790490daeb0064b97",
+  "bundle_bytes": 2366749,
+  "bundle_sha256": "0d89f62162b104a13b4d99310844db7b420ccf1850cfc6f51eb6fc253893a584",
   "manifest": {
     "components": [
       {
@@ -22,8 +22,8 @@
         "file": "ota_0.bin",
         "id": 2,
         "kind": "application",
-        "sha256": "a5156cfe6135f635486a423177b440f0790c3bab04fe560b02bcd90dbf8f193a",
-        "size": 5878048,
+        "sha256": "d29b50a8dff862626392b93a77496303d8e0cb4d9c76d28b10af1905789569ce",
+        "size": 5879008,
         "target_offset": 2162688
       },
       {
@@ -50,15 +50,16 @@
     "native_simulator": "passed: five filters, double click, countdown, rearm, retake, offline, duplicate print and failure",
     "startup": "passed: exact ELF validated healthy by official app-update",
     "stability": "final build healthy; earlier matching pipeline remained stable without crashes",
-    "operation_id": "0f0ee160-c362-4e48-94ac-0616d5889e3f",
-    "boot_id": "7381382702047088410",
+    "operation_id": "321d284e-ed35-4a10-b346-3b0d98a09344",
+    "boot_id": "13501319135185875362",
     "physical_buttons": "GPIO mechanical keys restored; live logs confirm capture/filter/retake/print and user confirms shutter sound",
     "gesture_and_sound": "Real five-class scores 0.94-1.00 observed; missed detections and a redundant gate interrupted hold. Use model default 0.25, 500ms grace and >=3 positives over >=700ms. Physical retest pending.",
     "physical_print": "user confirmed 384-dot width, centering and continuous feeding on pre-touch build; printer code unchanged",
-    "normal_to_vibe": "passed: 2411521010133290368 -> 8325044496057917022 -> 7381382702047088410",
+    "normal_to_vibe": "passed: 7381382702047088410 -> 15607611432447121871 -> 13501319135185875362",
     "poweroff": "previous build tested; shutdown code unchanged",
     "idea_resume": "previous build d1331f only; current grace fix not yet saved to Idea library",
-    "poweroff_operation_id": "09fc8d3c-71cd-4659-9526-c2e91b14ab78"
+    "poweroff_operation_id": "09fc8d3c-71cd-4659-9526-c2e91b14ab78",
+    "supplied_image_probe": "Hardware test: supplied monochrome halftone image padded to 384x384 grayscale and injected for 10s. All logged samples hands=0; no five classification, countdown, beep or capture. Live camera remains unaccepted."
   },
   "idea": {
     "saved": false,

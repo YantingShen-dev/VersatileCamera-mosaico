@@ -1,6 +1,7 @@
 #include "app_capture.h"
 #include "app_controls.h"
 #include "app_printer.h"
+#include "photo_probe.hpp"
 #include "bsp/power.h"
 #include "driver/ppa.h"
 #include "esp_cache.h"
@@ -36,6 +37,7 @@ struct app_capture {
     TaskHandle_t task = nullptr;
     app_photo_handle_t ui = nullptr;
     photo_control_t control = {};
+    PhotoProbe probe;
     photo_state_t &state = control.state;
     app_controls_handle_t controls = nullptr;
     HandDetect *detector = nullptr;
@@ -276,6 +278,17 @@ struct app_capture {
             app_printer_poll();
             state.connected = app_printer_ready();
             uint64_t now = esp_timer_get_time() / 1000;
+            probe.expire(now);
+            if (probe.begin(now)) {
+                // Start a fresh live hold; test data never requests printing.
+                state.mode = PHOTO_LIVE;
+                state.countdown = 0;
+                control.actions = 0;
+                control.palm_tracking = control.absent_tracking = false;
+                control.gesture_armed = true;
+                xQueueReset(commands);
+                ESP_LOGI(TAG, "Image probe started: 384x384 grayscale, 10 seconds");
+            }
             ButtonEvent event = {};
             while (xQueueReceive(commands, &event, 0) == pdTRUE)
                 photo_control_button(&control, event.command, event.timestamp);
@@ -314,8 +327,9 @@ struct app_capture {
                 continue;
             }
             mosaico_camera_frame_t frame = {};
-            esp_err_t e = mosaico_camera_get_frame(camera, &frame);
-            if (e == ESP_OK) {
+            const bool probing = probe.fill(bgr);
+            esp_err_t e = probing ? ESP_OK : mosaico_camera_get_frame(camera, &frame);
+            if (e == ESP_OK && !probing) {
                 e = convert(frame);
                 esp_err_t r = mosaico_camera_return_frame(camera, &frame);
                 if (e == ESP_OK)
@@ -406,10 +420,17 @@ extern "C" esp_err_t app_capture_start(app_capture_handle_t a, app_photo_handle_
         esp_unregister_shutdown_handler(app_capture::shutdown);
         return e;
     }
+    e = esp_iris_rpc_register(0x5048, 2, PhotoProbe::rpc, &a->probe);
+    if (e) {
+        esp_iris_rpc_unregister(0x5048, 1);
+        esp_unregister_shutdown_handler(app_capture::shutdown);
+        return e;
+    }
     if (xTaskCreate([](void *ctx) { static_cast<app_capture *>(ctx)->run(); }, "photo_capture",
                     16384, a, 4, &a->task) != pdPASS) {
         esp_unregister_shutdown_handler(app_capture::shutdown);
         esp_iris_rpc_unregister(0x5048, 1);
+        esp_iris_rpc_unregister(0x5048, 2);
         app_capture::shutdown_owner = nullptr;
         return ESP_ERR_NO_MEM;
     }
