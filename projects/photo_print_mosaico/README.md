@@ -2,7 +2,7 @@
 
 `photo_print_mosaico` 1.2.0：Mosaico 左侧摄像头、右侧 Interaction 双按钮板，直接通过 Classic Bluetooth SPP 连接 RPP02N / T3-GZP 热敏打印机。开机即取景，拍后先预览，确认才打印，不需要手机 App 或电脑中转。照片只存在内存里。
 
-1.2.0 改用离线语音口令“准备拍照”，已移除手势模型、手势触发和临时图片测试入口。取景时说出口令，进入五秒倒计时；机械按钮和拍后确认打印流程保留。当前版本正在进行实机语音验收，尚未另存 Idea。完整固件与验证状态见 `firmware/candidate-1.2.0.json`。旧 Idea `d1331f` 是 1.1.0 手势版。
+1.2.0 支持离线语音口令“准备拍照”。取景时说出口令，进入五秒倒计时；也可通过机械按钮拍照，拍后预览确认才打印。当前版本已通过实机验收，并保存为 Idea `d7fab0`。完整固件与验证状态见 `firmware/candidate-1.2.0.json`。
 
 ## 操作
 
@@ -85,7 +85,7 @@ python projects/photo_print_mosaico/tools/sim_controls.py --state D:/photo-sim-s
 
 当前 **1.2.0 语音版**已保存于这台设备的 Idea 库，本地标识 **`d7fab0`**（不是社区下载码）。2026-11-13 实机确认实时取景、拍照、重拍，以及“准备拍照”触发五秒倒计时、五声提示音和快门拍照；并已从 Idea 库重新打开核验。修复了语音与相机同时运行时显示 DMA 内存不足导致的白屏。构建哈希与验证记录见 `firmware/candidate-1.2.0.json`。
 
-1.0.0 的本地标识为 `ddfc02`，原版本实测打印无横纹、走纸连贯，源码提交 `a27420d` 已推送 `feat/photo-print-idea`；`firmware/release.json` 保留该初版记录。1.1.0 手势候选版记录保留在 `firmware/candidate-1.1.0.json`。`.irisfw` 安装包保留在本地，不纳入 Git。
+1.0.0 的本地标识为 `ddfc02`，原版本实测打印无横纹、走纸连贯，源码提交 `a27420d` 已推送 `feat/photo-print-idea`；`firmware/release.json` 保留该初版记录。`.irisfw` 安装包保留在本地，不纳入 Git。
 
 需要从电脑关机时，运行中的本应用支持以下维护命令。它会停止外设、发出官方 BSP 关机信号；USB 保持供电时进入熄屏深睡眠。
 

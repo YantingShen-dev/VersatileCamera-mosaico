@@ -2,7 +2,7 @@
 
 Owns camera, PPA, reusable PSRAM preview buffers, frozen image, timed controller
 and one 16KiB worker. Dependencies: app_photo, app_printer, app_controls, app_voice
-and the official camera/BSP/Iris components. No hand model or image-probe RPC.
+and the official camera/BSP/Iris components.
 
 Startup reserves Classic Bluetooth and duplex 16kHz audio/keys first. Ordinary
 malloc/new then prefers PSRAM before speech model initialization and camera
