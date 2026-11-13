@@ -37,9 +37,9 @@ typedef struct {
 enum { PHOTO_DO_CAPTURE = 1, PHOTO_DO_PRINT = 2, PHOTO_DO_BEEP = 4 };
 typedef struct {
     photo_state_t state;
-    uint64_t countdown_end, second_click_at, palm_since, absent_since;
+    uint64_t countdown_end, second_click_at, palm_since, palm_last_seen, absent_since;
     bool second_click_pending, palm_tracking, absent_tracking, gesture_armed;
-    unsigned actions;
+    unsigned actions, palm_samples;
 } photo_control_t;
 /* Single owner; all timestamps are monotonic milliseconds. */
 void photo_control_init(photo_control_t *c);

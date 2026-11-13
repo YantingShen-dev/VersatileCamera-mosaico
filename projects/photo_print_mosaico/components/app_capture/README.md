@@ -23,8 +23,9 @@ input queue length 8 preserves double clicks during inference. Commands received
 while printing are discarded after transfer, preventing an unintended queued print.
 
 PPA crops 768 square pixels and rotates/scales to 384x384 BGR888. Gesture analysis is
-attempted at most every 200ms while live. A single detected hand must score >=0.65,
-span >=45 pixels in both dimensions, and classify as five with score >=0.80. Pure
+attempted at most every 200ms while live. HandDetect applies its default 0.25 score
+threshold; there is no second detection-score gate. A single hand must span >=45
+pixels in both dimensions and classify as five with score >=0.80. Pure
 controller logic requires temporal persistence and rearming after hand absence.
 
 Models initialize before camera buffers to reduce PSRAM fragmentation. Audio/keys

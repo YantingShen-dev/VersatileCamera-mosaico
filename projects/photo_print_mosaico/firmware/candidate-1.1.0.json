@@ -4,10 +4,10 @@
   "date": "2026-11-13",
   "status": "candidate: mechanical keys, shutter sound and print verified; real palm countdown pending",
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
-  "firmware_elf_sha256": "07533acaf08aac738b6d1767f84481ab1786ff76af85712d0d7b5c62588767e0",
+  "firmware_elf_sha256": "42410b6fb8dd56d5c74489f0a5c9f95d18a331dc4453dd6ee8a1dc8380616f6a",
   "bundle": "photo_print_mosaico-1.1.0.irisfw",
-  "bundle_bytes": 2366118,
-  "bundle_sha256": "14f03e69590c6cc8bfffde2985c87252a51a5eea0472e19a113682fa436c99be",
+  "bundle_bytes": 2366249,
+  "bundle_sha256": "881ba8f749873e83929964c09b1a1b3ae7647f2e687835a790490daeb0064b97",
   "manifest": {
     "components": [
       {
@@ -22,8 +22,8 @@
         "file": "ota_0.bin",
         "id": 2,
         "kind": "application",
-        "sha256": "2f3af8b89077c21661b4de4f472f08a5dacdbd400460ccd0301ba57fa6e8e106",
-        "size": 5877744,
+        "sha256": "a5156cfe6135f635486a423177b440f0790c3bab04fe560b02bcd90dbf8f193a",
+        "size": 5878048,
         "target_offset": 2162688
       },
       {
@@ -48,27 +48,28 @@
     "state_machine_unit": "passed",
     "bitmap_unit": "passed: five filters and exact preview",
     "native_simulator": "passed: five filters, double click, countdown, rearm, retake, offline, duplicate print and failure",
-    "startup": "passed: camera, interaction board, speaker, models and printer Bluetooth ready; crash_count=0",
+    "startup": "passed: exact ELF validated healthy by official app-update",
     "stability": "final build healthy; earlier matching pipeline remained stable without crashes",
-    "operation_id": "1488d3a3-423c-4ba5-89a5-5a12e9c49989",
-    "boot_id": "1150928067246464571",
+    "operation_id": "0f0ee160-c362-4e48-94ac-0616d5889e3f",
+    "boot_id": "7381382702047088410",
     "physical_buttons": "GPIO mechanical keys restored; live logs confirm capture/filter/retake/print and user confirms shutter sound",
-    "gesture_and_sound": "shutter audible confirmed; five-beep palm countdown pending physical retest after detector gate 0.65 -> 0.35",
+    "gesture_and_sound": "Real five-class scores 0.94-1.00 observed; missed detections and a redundant gate interrupted hold. Use model default 0.25, 500ms grace and >=3 positives over >=700ms. Physical retest pending.",
     "physical_print": "user confirmed 384-dot width, centering and continuous feeding on pre-touch build; printer code unchanged",
-    "normal_to_vibe": "passed on final build: boot 1150928067246464571 -> 8342298717519520751",
-    "poweroff": "RPC acknowledged 01; camera/Bluetooth stopped in log; both USB interfaces absent and device offline",
-    "idea_resume": "passed: d1331f restored exact final ELF 07533aca; boot 13170038055676749686; crash_count=0",
+    "normal_to_vibe": "passed: 2411521010133290368 -> 8325044496057917022 -> 7381382702047088410",
+    "poweroff": "previous build tested; shutdown code unchanged",
+    "idea_resume": "previous build d1331f only; current grace fix not yet saved to Idea library",
     "poweroff_operation_id": "09fc8d3c-71cd-4659-9526-c2e91b14ab78"
   },
   "idea": {
-    "saved": true,
+    "saved": false,
     "previous_version": "1.0.0",
     "previous_local_id_display": "ddfc02",
     "pre_touch_build_local_id_display": "dc9fcf",
     "pre_touch_build_version": "1.1.0",
     "pre_touch_build_saved": true,
-    "local_id_display": "d1331f",
+    "local_id_display": null,
     "name": "photo_print_mosaico",
-    "version": "1.1.0"
+    "version": "1.1.0",
+    "previous_candidate_local_id_display": "d1331f"
   }
 }

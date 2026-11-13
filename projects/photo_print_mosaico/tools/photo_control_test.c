@@ -18,6 +18,8 @@ int main(void) {
     assert(c.state.mode == PHOTO_LIVE &&
            c.state.filter == PHOTO_NORMAL); // double click must not move selection
     photo_control_palm(&c, true, 1000);
+    photo_control_palm(&c, true, 1200);
+    photo_control_palm(&c, true, 1400);
     photo_control_palm(&c, true, 1699);
     assert(c.state.mode == PHOTO_LIVE);
     photo_control_palm(&c, true, 1700);
@@ -50,6 +52,8 @@ int main(void) {
     photo_control_palm(&c, false, 9100);
     photo_control_palm(&c, false, 9900);
     photo_control_palm(&c, true, 10000);
+    photo_control_palm(&c, true, 10200);
+    photo_control_palm(&c, true, 10400);
     photo_control_palm(&c, true, 10700);
     assert(c.state.mode == PHOTO_COUNTDOWN);
     photo_control_take_actions(&c);
@@ -58,6 +62,26 @@ int main(void) {
     assert(c.state.mode == PHOTO_LIVE && !photo_control_take_actions(&c));
     photo_control_button(&c, PHOTO_BUTTON1, 17001);
     assert(photo_control_take_actions(&c) & PHOTO_DO_CAPTURE);
+    /* Real inference may miss one frame while the hand stays in place. */
+    photo_control_init(&c);
+    c.state.mode = PHOTO_LIVE;
+    photo_control_palm(&c, true, 0);
+    photo_control_palm(&c, true, 220);
+    photo_control_palm(&c, false, 440);
+    photo_control_palm(&c, true, 660);
+    photo_control_palm(&c, true, 880);
+    assert(c.state.mode == PHOTO_COUNTDOWN);
+    /* Isolated detections must not accumulate across an absent hand. */
+    photo_control_init(&c);
+    c.state.mode = PHOTO_LIVE;
+    photo_control_palm(&c, true, 0);
+    photo_control_palm(&c, true, 220);
+    photo_control_palm(&c, false, 750);
+    photo_control_palm(&c, true, 900);
+    photo_control_palm(&c, true, 1120);
+    assert(c.state.mode == PHOTO_LIVE);
+    photo_control_palm(&c, true, 1900);
+    assert(c.state.mode == PHOTO_LIVE);
     puts("control: filter wrap/double-click, 5 beeps/5 seconds, hold rearm, cancel, offline and "
          "duplicate printing passed");
 }

@@ -200,9 +200,10 @@ struct app_capture {
         float score = 0;
         if (hands.size() == 1) {
             const auto &hand = hands.front();
-            // The small detector reports real palms around 0.4-0.6 on this camera.
-            // Let the dedicated gesture classifier and stable hold reject false triggers.
-            if (hand.score >= 0.35f && hand.box[2] - hand.box[0] >= 45 &&
+            // HandDetect already filters at its model's default 0.25 threshold.
+            // Real hands also score 0.27: classify them instead of discarding them
+            // with a second gate. The five-class score and temporal hold validate intent.
+            if (hand.box[2] - hand.box[0] >= 45 &&
                 hand.box[3] - hand.box[1] >= 45) {
                 std::vector<int> crop = {hand.box[0], hand.box[1], hand.box[2], hand.box[3]};
                 auto results = gesture->run_crop(image, crop);
@@ -216,7 +217,7 @@ struct app_capture {
             }
         }
         uint64_t finished = esp_timer_get_time() / 1000;
-        if (finished - last_gesture_report >= 2000) {
+        if (!hands.empty() || finished - last_gesture_report >= 2000) {
             last_gesture_report = finished;
             ESP_LOGI(TAG, "Vision hands=%u gesture=%s score=%.2f palm=%d elapsed=%llu ms",
                      (unsigned)hands.size(), category, score, palm,
@@ -227,7 +228,10 @@ struct app_capture {
                          h.box[0], h.box[1], h.box[2], h.box[3]);
             }
         }
+        const auto previous_mode = state.mode;
         photo_control_palm(&control, palm, esp_timer_get_time() / 1000);
+        if (previous_mode == PHOTO_LIVE && state.mode == PHOTO_COUNTDOWN)
+            ESP_LOGI(TAG, "Palm confirmed: starting 5-second countdown");
     }
     void run() {
         photo_control_init(&control);

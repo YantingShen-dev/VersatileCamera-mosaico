@@ -1,5 +1,6 @@
 #include "photo_control.h"
 #include <string.h>
+enum { PALM_HOLD_MS = 700, PALM_MISS_GRACE_MS = 500, PALM_MIN_SAMPLES = 3 };
 static void capture(photo_control_t *c) {
     c->state.mode = PHOTO_CAPTURING;
     c->state.countdown = 0;
@@ -88,7 +89,9 @@ void photo_control_tick(photo_control_t *c, uint64_t now) {
 }
 void photo_control_palm(photo_control_t *c, bool open, uint64_t now) {
     if (!open) {
-        c->palm_tracking = false;
+        /* One missed inference must not erase an otherwise stable hand hold. */
+        if (c->palm_tracking && now - c->palm_last_seen > PALM_MISS_GRACE_MS)
+            c->palm_tracking = false;
         if (!c->absent_tracking) {
             c->absent_tracking = true;
             c->absent_since = now;
@@ -102,11 +105,15 @@ void photo_control_palm(photo_control_t *c, bool open, uint64_t now) {
         c->palm_tracking = false;
         return;
     }
-    if (!c->palm_tracking) {
+    if (!c->palm_tracking || now - c->palm_last_seen > PALM_MISS_GRACE_MS) {
         c->palm_tracking = true;
         c->palm_since = now;
+        c->palm_samples = 0;
     }
-    if (now - c->palm_since >= 700) {
+    c->palm_last_seen = now;
+    if (c->palm_samples < PALM_MIN_SAMPLES)
+        ++c->palm_samples;
+    if (now - c->palm_since >= PALM_HOLD_MS && c->palm_samples >= PALM_MIN_SAMPLES) {
         c->gesture_armed = false;
         c->palm_tracking = false;
         c->state.mode = PHOTO_COUNTDOWN;
